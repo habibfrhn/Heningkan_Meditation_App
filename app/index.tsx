@@ -1,14 +1,20 @@
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
-export default function Index(): null {
+export default function Index(): JSX.Element | null {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Redirect to the HomeScreen
-    router.replace('/homeScreen');
-  }, [router]);
+    setIsMounted(true); // Ensure the layout is mounted
+  }, []);
 
-  // Return null since this file serves as a redirect
-  return null;
+  useEffect(() => {
+    if (isMounted) {
+      // Redirect to the HomeScreen once mounted
+      router.replace('/homeScreen');
+    }
+  }, [isMounted, router]);
+
+  return null; // Return null as this is just a redirect file
 }

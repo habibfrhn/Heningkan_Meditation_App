@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useRouter } from 'expo-router'; // Use Expo Router for navigation
+import { useRouter } from 'expo-router';
 
 const COLORS = {
   darkBlue: '#0A2647',
@@ -59,7 +59,7 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.boxTitle}>Berhenti. Tarik Napas. Tenang.</Text>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.push('/timerScreen')} // Navigate to timerScreen
+            onPress={() => router.push('/timerScreen')}
           >
             <Text style={styles.buttonText}>Mulai Meditasi</Text>
           </TouchableOpacity>

@@ -1,23 +1,18 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "baseUrl": ".", // Base path for resolving paths
-    "forceConsistentCasingInFileNames": true, // Enforce consistent casing
-    "strict": true, // Enable strict type checking
+    "baseUrl": ".",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
     "paths": {
-      "@/*": ["app/*"] // Alias for app folder
+      "@/*": ["app/*"]
     },
-    "typeRoots": ["./node_modules/@types"], // Ensure correct type roots
-    "types": ["jest", "node", "react-native"], // Include required types
-    "skipLibCheck": true, // Skip type checking of library files
-    "jsx": "react-native", // Use react-native JSX
-    "moduleResolution": "node" // Use node module resolution
+    "typeRoots": ["./node_modules/@types", "./typings"]
   },
   "include": [
     "app/**/*.ts",
     "app/**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ],
-  "exclude": ["node_modules", "dist", "scripts"]
+  ]
 }
