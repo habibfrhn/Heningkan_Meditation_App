@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS, LAYOUT, TEXT_STYLES } from './theme';
 
+// Quotes List
 const quotes = [
   "Hidup sehat dimulai dari pikiran yang tenang dan hati yang bahagia.",
   "Rawat tubuhmu seperti rumah, karena di sanalah jiwamu tinggal.",
@@ -21,17 +22,40 @@ const quotes = [
   "Saat kamu memperlambat langkah, kamu akan mendengar suara hatimu lebih jelas."
 ];
 
+// Reusable Section Box Component
+const SectionBox = ({ title, onPress, customStyle }: any) => (
+  <TouchableOpacity style={[LAYOUT.section, customStyle]} onPress={onPress}>
+    <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>{title}</Text>
+  </TouchableOpacity>
+);
+
+// Reusable Navigation Button Component
+const NavigationButton = ({ label, icon, isActive, onPress }: any) => (
+  <TouchableOpacity
+    style={{
+      alignItems: 'center',
+      marginHorizontal: 30,
+      backgroundColor: isActive ? COLORS.primary : COLORS.background,
+      borderRadius: 10,
+      padding: 10,
+    }}
+    onPress={onPress}
+  >
+    <Image
+      source={icon}
+      style={{ width: 24, height: 24, tintColor: COLORS.black }}
+    />
+    <Text style={[TEXT_STYLES.body, { marginTop: 5, color: COLORS.black }]}>{label}</Text>
+  </TouchableOpacity>
+);
+
 export default function HomeScreen(): JSX.Element {
   const [greeting, setGreeting] = useState<string>('');
   const [quote, setQuote] = useState<string>('');
   const router = useRouter();
   const pathname = usePathname();
 
-  const getRandomQuote = () => {
-    const randomIndex = Math.floor(Math.random() * quotes.length);
-    return quotes[randomIndex];
-  };
-
+  // Set Greeting and Random Quote
   useEffect(() => {
     const currentHour = new Date().getHours();
     if (currentHour >= 5 && currentHour < 12) setGreeting('Selamat Pagi');
@@ -39,18 +63,16 @@ export default function HomeScreen(): JSX.Element {
     else if (currentHour >= 15 && currentHour < 18) setGreeting('Selamat Sore');
     else setGreeting('Selamat Malam');
 
+    const getRandomQuote = () => quotes[Math.floor(Math.random() * quotes.length)];
     setQuote(getRandomQuote());
 
-    const interval = setInterval(() => {
-      setQuote(getRandomQuote());
-    }, 60 * 60 * 1000);
-
+    const interval = setInterval(() => setQuote(getRandomQuote()), 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <View style={[LAYOUT.container, { justifyContent: 'space-between', paddingVertical: 20 }]}>
-      {/* Top Section: Logo and Greeting */}
+      {/* Top Section */}
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
           <Image
@@ -61,89 +83,47 @@ export default function HomeScreen(): JSX.Element {
             {greeting}
           </Text>
         </View>
-
-        {/* Quote */}
-        <Text
-          style={[
-            TEXT_STYLES.body,
-            { color: COLORS.black, textAlign: 'left' },
-          ]}
-        >
+        <Text style={[TEXT_STYLES.body, { color: COLORS.black, textAlign: 'left', marginBottom: 10 }]}>
           {quote}
         </Text>
       </View>
 
-      {/* Middle Section: Section Boxes */}
+      {/* Middle Section */}
       <View>
-        <TouchableOpacity
-          style={[LAYOUT.section, LAYOUT.largeSection, { marginBottom: 10 }]}
-          onPress={() => router.push('/jurnalScreen')}
-        >
-          <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>Jurnal.</Text>
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-          <TouchableOpacity
-            style={[LAYOUT.section, LAYOUT.smallSection, { marginRight: 5 }]} // Adjust spacing
+        <SectionBox title="Jurnal." onPress={() => router.push('/jurnalScreen')} customStyle={LAYOUT.largeSection} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginVertical: 10 }}>
+          <SectionBox
+            title="Latihan napas."
             onPress={() => router.push('/bernapasScreen')}
-          >
-            <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>Latihan napas.</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[LAYOUT.section, LAYOUT.smallSection, { marginLeft: 5 }]} // Adjust spacing
+            customStyle={{ flex: 1, marginRight: 5 }}
+          />
+          <SectionBox
+            title="Meditasi."
             onPress={() => router.push('/timerScreen')}
-          >
-            <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>Meditasi.</Text>
-          </TouchableOpacity>
+            customStyle={{ flex: 1, marginLeft: 5 }}
+          />
         </View>
-
-        <TouchableOpacity
-          style={[LAYOUT.section, LAYOUT.largeSection, { marginBottom: 10 }]}
+        <SectionBox
+          title="Meditasi dengan panduan."
           onPress={() => router.push('/panduanMeditasiScreen')}
-        >
-          <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>
-            Meditasi dengan panduan.
-          </Text>
-        </TouchableOpacity>
+          customStyle={LAYOUT.largeSection}
+        />
       </View>
 
       {/* Bottom Navigation */}
-      <View>
-        <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-          <TouchableOpacity
-            style={{
-              alignItems: 'center',
-              marginHorizontal: 30,
-              backgroundColor: pathname === '/' ? COLORS.primary : COLORS.background,
-              borderRadius: 10,
-              padding: 10,
-            }}
-            onPress={() => router.push('/')}
-          >
-            <Image
-              source={require('../assets/icons/home.png')}
-              style={{ width: 24, height: 24, tintColor: COLORS.black }}
-            />
-            <Text style={[TEXT_STYLES.body, { marginTop: 5, color: COLORS.black }]}>Home</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              alignItems: 'center',
-              marginHorizontal: 30,
-              backgroundColor: pathname === '/profileScreen' ? COLORS.primary : COLORS.background,
-              borderRadius: 10,
-              padding: 10,
-            }}
-            onPress={() => router.push('/profileScreen')}
-          >
-            <Image
-              source={require('../assets/icons/profile.png')}
-              style={{ width: 24, height: 24, tintColor: COLORS.black }}
-            />
-            <Text style={[TEXT_STYLES.body, { marginTop: 5, color: COLORS.black }]}>Profile</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+        <NavigationButton
+          label="Home"
+          icon={require('../assets/icons/home.png')}
+          isActive={pathname === '/'}
+          onPress={() => router.push('/')}
+        />
+        <NavigationButton
+          label="Profile"
+          icon={require('../assets/icons/profile.png')}
+          isActive={pathname === '/profileScreen'}
+          onPress={() => router.push('/profileScreen')}
+        />
       </View>
     </View>
   );
