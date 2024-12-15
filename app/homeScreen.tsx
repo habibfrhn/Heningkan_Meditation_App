@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Font from 'expo-font';
 
 const COLORS = {
   background: '#f1f2f4',
@@ -32,8 +33,18 @@ const HomeScreen: React.FC = () => {
   const router = useRouter();
   const [greeting, setGreeting] = useState<string>('');
   const [quote, setQuote] = useState<string>('');
+  const [fontLoaded, setFontLoaded] = useState<boolean>(false);
 
   useEffect(() => {
+    const loadFont = async () => {
+      await Font.loadAsync({
+        'Gilroy-Regular': require('../assets/fonts/Gilroy-Regular.ttf'),
+      });
+      setFontLoaded(true);
+    };
+
+    loadFont();
+
     const currentHour = new Date().getHours();
     if (currentHour >= 5 && currentHour < 12) {
       setGreeting('Selamat Pagi');
@@ -48,6 +59,10 @@ const HomeScreen: React.FC = () => {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     setQuote(quotes[randomIndex]);
   }, []);
+
+  if (!fontLoaded) {
+    return <Text>Loading...</Text>; // Show a loading state while the font is being loaded
+  }
 
   const handleNavigation = () => {
     router.push('/timerScreen');
@@ -132,6 +147,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.black,
+    fontFamily: 'Gilroy-Regular',
   },
   quote: {
     fontSize: 14,
@@ -139,6 +155,7 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     marginBottom: 20,
     textAlign: 'left',
+    fontFamily: 'Gilroy-Regular',
   },
   sections: {
     flex: 1,
@@ -152,14 +169,14 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: COLORS.white,
     borderRadius: 10,
-    alignItems: 'flex-start', // Align content to the left
-    justifyContent: 'flex-start', // Align content to the top
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
     elevation: 5,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
-    padding: 10, // Add padding for title
+    padding: 10,
   },
   largeSection: {
     width: '100%',
@@ -173,6 +190,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.black,
+    fontFamily: 'Gilroy-Regular',
   },
   bottomNav: {
     flexDirection: 'row',
@@ -190,6 +208,7 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 12,
     color: COLORS.black,
+    fontFamily: 'Gilroy-Regular',
   },
 });
 
