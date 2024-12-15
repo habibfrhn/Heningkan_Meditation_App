@@ -1,37 +1,37 @@
+// File path: app/homeScreen.tsx
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 
 const COLORS = {
-  darkBlue: '#0A2647',
-  peach: '#FFB4A2',
+  background: '#f1f2f4',
   white: '#FFFFFF',
   black: '#000000',
-  textGray: '#333333',
 };
+
+const quotes = [
+  "Hidup sehat dimulai dari pikiran yang tenang dan hati yang bahagia.",
+  "Rawat tubuhmu seperti rumah, karena di sanalah jiwamu tinggal.",
+  "Istirahat bukan kemalasan, tapi bagian dari merawat diri.",
+  "Kesehatan adalah investasi terbaik yang bisa kamu lakukan.",
+  "Jangan lupa tersenyum. Itu latihan kecil untuk jiwa yang bahagia.",
+  "Setiap langkah kecil menuju hidup sehat adalah pencapaian besar.",
+  "Kamu pantas merasa baik, secara fisik dan emosional.",
+  "Diam bukan berarti kosong, tapi ruang untuk mendengarkan jiwa.",
+  "Dalam hening, kamu menemukan dirimu yang sebenarnya.",
+  "Tarik napas dalam-dalam, lepaskan perlahan. Di sanalah kedamaian dimulai.",
+  "Meditasi adalah perjalanan pulang ke dalam diri.",
+  "Pikiran yang tenang adalah kunci untuk melihat dunia dengan jernih.",
+  "Saat dunia terasa berat, pejamkan mata dan temukan kedamaian di dalam diri.",
+  "Lepaskan yang tidak bisa kamu kendalikan dan biarkan hidup mengalir.",
+  "Saat kamu memperlambat langkah, kamu akan mendengar suara hatimu lebih jelas."
+];
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
   const [greeting, setGreeting] = useState<string>('');
   const [quote, setQuote] = useState<string>('');
-
-  const quotes: string[] = [
-    "Hidup sehat dimulai dari pikiran yang tenang dan hati yang bahagia.",
-    "Rawat tubuhmu seperti rumah, karena di sanalah jiwamu tinggal.",
-    "Istirahat bukan kemalasan, tapi bagian dari merawat diri.",
-    "Kesehatan adalah investasi terbaik yang bisa kamu lakukan.",
-    "Jangan lupa tersenyum. Itu latihan kecil untuk jiwa yang bahagia.",
-    "Setiap langkah kecil menuju hidup sehat adalah pencapaian besar.",
-    "Kamu pantas merasa baik, secara fisik dan emosional.",
-    "Diam bukan berarti kosong, tapi ruang untuk mendengarkan jiwa.",
-    "Dalam hening, kamu menemukan dirimu yang sebenarnya.",
-    "Tarik napas dalam-dalam, lepaskan perlahan. Di sanalah kedamaian dimulai.",
-    "Meditasi adalah perjalanan pulang ke dalam diri.",
-    "Pikiran yang tenang adalah kunci untuk melihat dunia dengan jernih.",
-    "Saat dunia terasa berat, pejamkan mata dan temukan kedamaian di dalam diri.",
-    "Lepaskan yang tidak bisa kamu kendalikan dan biarkan hidup mengalir.",
-    "Saat kamu memperlambat langkah, kamu akan mendengar suara hatimu lebih jelas.",
-  ];
 
   useEffect(() => {
     const currentHour = new Date().getHours();
@@ -49,25 +49,62 @@ const HomeScreen: React.FC = () => {
     setQuote(quotes[randomIndex]);
   }, []);
 
+  const handleNavigation = () => {
+    router.push('/timerScreen');
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.greeting}>{greeting}</Text>
+      {/* Logo and Greeting */}
+      <View style={styles.header}>
+        <Image
+          source={require('../assets/images/logo/logo.png')} // Corrected path
+          style={styles.logo}
+        />
+        <Text style={styles.greeting}>{greeting}</Text>
+      </View>
+
+      {/* Quote */}
       <Text style={styles.quote}>{quote}</Text>
 
-      <View style={styles.box}>
-        <View style={styles.textContainer}>
-          <Text style={styles.boxTitle}>Berhenti. Tarik Napas. Tenang.</Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push('/timerScreen')}
-          >
-            <Text style={styles.buttonText}>Mulai Meditasi</Text>
+      {/* Section Boxes */}
+      <View style={styles.sections}>
+        <View style={styles.row}>
+          <TouchableOpacity style={[styles.section, styles.largeSection]} onPress={handleNavigation}>
+            <Text style={styles.sectionTitle}>Jurnal.</Text>
           </TouchableOpacity>
         </View>
-        <Image
-          source={require('../assets/images/homepage/MeditationHomePage.png')}
-          style={styles.image}
-        />
+        <View style={styles.row}>
+          <TouchableOpacity style={[styles.section, styles.smallSection]} onPress={handleNavigation}>
+            <Text style={styles.sectionTitle}>Bernapas.</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.section, styles.smallSection]} onPress={handleNavigation}>
+            <Text style={styles.sectionTitle}>Meditasi.</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.row}>
+          <TouchableOpacity style={[styles.section, styles.largeSection]} onPress={handleNavigation}>
+            <Text style={styles.sectionTitle}>Afirmasi.</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem} onPress={handleNavigation}>
+          <Image
+            source={require('../assets/icons/home.png')} // Corrected path
+            style={styles.navIcon}
+          />
+          <Text style={styles.navText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={handleNavigation}>
+          <Image
+            source={require('../assets/icons/profile.png')} // Corrected path
+            style={styles.navIcon}
+          />
+          <Text style={styles.navText}>Profile</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -76,58 +113,83 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
     paddingHorizontal: 20,
+    paddingTop: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  logo: {
+    width: 50,
+    height: 50,
+    resizeMode: 'contain',
+    marginRight: 10,
   },
   greeting: {
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 30,
-    marginTop: 100,
-    textAlign: 'left',
   },
   quote: {
     fontSize: 14,
     fontStyle: 'italic',
-    color: COLORS.textGray,
+    color: COLORS.black,
+    marginBottom: 20,
     textAlign: 'left',
-    marginBottom: 10,
   },
-  box: {
-    backgroundColor: COLORS.peach,
-    padding: 20,
-    borderRadius: 15,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  textContainer: {
+  sections: {
     flex: 1,
-    justifyContent: 'center',
+    marginBottom: 20,
   },
-  boxTitle: {
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  section: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    alignItems: 'flex-start', // Align content to the left
+    justifyContent: 'flex-start', // Align content to the top
+    elevation: 5,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    padding: 10, // Add padding for title
+  },
+  largeSection: {
+    width: '100%',
+    height: 150,
+  },
+  smallSection: {
+    width: '48%',
+    height: 150,
+  },
+  sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 20,
   },
-  button: {
-    backgroundColor: COLORS.black,
-    borderRadius: 50,
-    paddingHorizontal: 20,
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     paddingVertical: 10,
-    alignSelf: 'flex-start',
   },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 16,
+  navItem: {
+    alignItems: 'center',
   },
-  image: {
-    width: 120,
-    height: 120,
-    resizeMode: 'contain',
+  navIcon: {
+    width: 24,
+    height: 24,
+    marginBottom: 5,
+  },
+  navText: {
+    fontSize: 12,
+    color: COLORS.black,
   },
 });
 
