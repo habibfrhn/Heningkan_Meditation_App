@@ -5,7 +5,7 @@ export const COLORS = {
   background: '#f1f2f4',
   white: '#FFFFFF',
   black: '#000000',
-  primary: '#F4CE14', // Added primary color
+  primary: '#F4CE14',
 };
 
 // Define reusable fonts
