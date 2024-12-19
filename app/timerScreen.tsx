@@ -1,120 +1,74 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   Alert,
   Animated,
-  Easing,
+  PanResponder,
+  Vibration,
+  GestureResponderEvent,
 } from 'react-native';
 import { Audio } from 'expo-av';
-import { useFocusEffect } from '@react-navigation/native';
+import theme from './theme';
 
-const COLORS = {
-  white: '#FFFFFF',
-  black: '#000000',
-  peach: '#FFB4A2',
-};
+const MAX_DURATION = 60;
+const SECTIONS = [10, 20, 30, 40];
+const VIBRATION_PATTERN = [100, 200, 300];
 
 const TimerScreen: React.FC = () => {
-  const [selectedTime, setSelectedTime] = useState<number | null>(null);
+  const [selectedTime, setSelectedTime] = useState<number>(20);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [scale] = useState(new Animated.Value(1));
-  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const animatedValue = useRef(new Animated.Value(selectedTime)).current;
+  const circleScale = useRef(new Animated.Value(1)).current;
 
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        stopAndReset();
-      };
-    }, [])
-  );
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: selectedTime,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, [selectedTime]);
 
   useEffect(() => {
     if (remainingTime === 0 && isPlaying) {
       stopAndReset();
       Alert.alert('Meditation Completed');
+      playBellSound();
+      Vibration.vibrate(VIBRATION_PATTERN);
     }
-  }, [remainingTime, isPlaying]);
+  }, [remainingTime]);
 
-  const playSound = async () => {
+  const playBellSound = async () => {
     try {
       const { sound } = await Audio.Sound.createAsync(
-        require('../assets/audio/Ocean_Wave_Audio.mp3'),
-        { shouldPlay: true, isLooping: true }
+        require('../assets/audio/MeditationEnding.mp3')
       );
       setSound(sound);
-    } catch (error) {
-      console.error('Failed to load sound', error);
-      Alert.alert('Error', 'Failed to load the audio file.');
+      await sound.playAsync();
+    } catch (err) {
+      console.error('Error loading bell sound:', err);
     }
   };
 
-  const startTimer = (minutes: number) => {
-    setSelectedTime(minutes);
-    setRemainingTime(minutes * 60);
-    setIsPlaying(true);
-    playSound();
-    startPulseAnimation();
-
-    const interval = setInterval(() => {
-      setRemainingTime((prev) => (prev !== null ? prev - 1 : null));
-    }, 1000);
-    setTimerInterval(interval);
-  };
-
-  const stopAndReset = async () => {
-    if (timerInterval) clearInterval(timerInterval);
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-    }
-    setSelectedTime(null);
+  const stopAndReset = () => {
+    if (sound) sound.unloadAsync();
     setRemainingTime(null);
     setIsPlaying(false);
-    setSound(null);
-    scale.stopAnimation();
-    scale.setValue(1);
+    Animated.spring(circleScale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const pauseOrContinue = async () => {
-    if (isPlaying) {
-      if (timerInterval) clearInterval(timerInterval);
-      if (sound) await sound.pauseAsync();
-      scale.stopAnimation();
-    } else {
-      const interval = setInterval(() => {
-        setRemainingTime((prev) => (prev !== null ? prev - 1 : null));
-      }, 1000);
-      setTimerInterval(interval);
-      if (sound) await sound.playAsync();
-      startPulseAnimation();
+  const updateTime = (newMinutes: number) => {
+    if (newMinutes >= 0 && newMinutes <= MAX_DURATION) {
+      setSelectedTime(newMinutes);
+      Vibration.vibrate(50);
     }
-    setIsPlaying(!isPlaying);
-  };
-
-  const startPulseAnimation = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scale, {
-          toValue: 1.5,
-          duration: 3000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(scale, {
-          toValue: 1,
-          duration: 3000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
   };
 
   const formatTime = (seconds: number): string => {
@@ -125,56 +79,70 @@ const TimerScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Pilih Durasi Meditasimu</Text>
-
-      <View style={styles.spacerBetweenTitleAndCircle} />
-
-      <Animated.View style={[styles.circle, { transform: [{ scale }] }]} />
-
-      <View style={styles.spacerExtraLarge} />
-
-      <View style={styles.timerButtons}>
-        {[
-          { time: 5, label: '5 Menit' },
-          { time: 15, label: '15 Menit' },
-          { time: 30, label: '30 Menit' },
-        ].map(({ time, label }) => (
-          <TouchableOpacity
-            key={time}
-            style={styles.timerButton}
-            onPress={() => startTimer(time)}
-          >
-            <Text style={styles.timerText}>{label}</Text>
-          </TouchableOpacity>
-        ))}
+      {/* Timer Text Section */}
+      <View style={styles.timerTextSection}>
+        <Text style={styles.timerText}>Your timer is set to {selectedTime} min</Text>
       </View>
 
-      {remainingTime !== null && (
-        <Text style={styles.timerDisplay}>
-          Sisa Waktu: {formatTime(remainingTime)}
-        </Text>
-      )}
-
-      {selectedTime && (
-        <View style={styles.controlButtons}>
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={pauseOrContinue}
-          >
-            <Text style={styles.controlText}>
-              {isPlaying ? 'Pause' : 'Lanjutkan'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.controlButton} onPress={stopAndReset}>
-            <Text style={styles.controlText}>Stop</Text>
-          </TouchableOpacity>
+      {/* Timer Circle Section */}
+      <View style={styles.timerCircleSection}>
+        <View style={styles.timerCircle}>
+          <Animated.View
+            style={[
+              styles.outerCircle,
+              { transform: [{ scale: circleScale }] },
+            ]}
+          />
+          <View style={styles.innerCircle} />
         </View>
-      )}
+      </View>
 
-      <Text style={styles.footerQuote}>
-        "Tenangkan pikiran, damaikan jiwa."
-      </Text>
+      {/* Predefined Durations Section */}
+      <View style={styles.durationsSection}>
+        <View style={styles.durationContainer}>
+          {SECTIONS.map((time) => (
+            <TouchableOpacity
+              key={time}
+              style={[
+                styles.durationButton,
+                selectedTime === time && styles.activeDurationButton,
+              ]}
+              onPress={() => updateTime(time)}
+            >
+              <Text
+                style={[
+                  styles.durationButtonText,
+                  selectedTime === time && styles.activeDurationText,
+                ]}
+              >
+                {time}m
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Bell and Ambient Sound Section */}
+      <View style={styles.audioSection}>
+        <View style={styles.audioContainer}>
+          <Text style={styles.sectionTitle}>Bell Selection</Text>
+          <Text style={styles.bodyText}>Nano Bell</Text>
+          <Text style={styles.sectionTitle}>Ambient Sound</Text>
+          <Text style={styles.bodyText}>Theta Waves</Text>
+        </View>
+      </View>
+
+      {/* Start Timer Button Section */}
+      <View style={styles.buttonSection}>
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={isPlaying ? stopAndReset : () => setRemainingTime(selectedTime * 60)}
+        >
+          <Text style={styles.startButtonText}>
+            {isPlaying ? 'Stop Timer' : 'Start Timer'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -182,79 +150,97 @@ const TimerScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: theme.COLORS.background,
     paddingHorizontal: 20,
-    paddingTop: 30,
+    paddingVertical: 30,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    marginBottom: 5,
-  },
-  spacerBetweenTitleAndCircle: {
-    height: 75,
-  },
-  spacerExtraLarge: {
-    height: 60,
-  },
-  circle: {
-    width: 150,
-    height: 150,
-    backgroundColor: COLORS.peach,
-    borderRadius: 75,
-  },
-  timerButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '90%',
-    marginVertical: 20,
-  },
-  timerButton: {
-    backgroundColor: COLORS.peach,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  timerTextSection: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 8,
   },
   timerText: {
-    color: COLORS.black,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  timerDisplay: {
-    color: COLORS.black,
-    fontSize: 22,
-    marginVertical: 10,
+  timerCircleSection: {
+    flex: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  controlButtons: {
+  timerCircle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outerCircle: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 10,
+    borderColor: theme.COLORS.primary,
+    position: 'absolute',
+  },
+  innerCircle: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: theme.COLORS.white,
+  },
+  durationsSection: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  durationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    width: '80%',
-    marginTop: 20,
   },
-  controlButton: {
-    backgroundColor: COLORS.black,
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 20,
-    marginHorizontal: 10,
+  durationButton: {
+    backgroundColor: theme.COLORS.background,
+    padding: 15,
+    borderRadius: 10,
   },
-  controlText: {
-    color: COLORS.white,
+  activeDurationButton: {
+    backgroundColor: theme.COLORS.primary,
+  },
+  durationButtonText: {
+    textAlign: 'center',
+  },
+  activeDurationText: {
+    color: theme.COLORS.white,
+  },
+  audioSection: {
+    flex: 2,
+    borderTopWidth: 1,
+    borderColor: theme.COLORS.black,
+    paddingTop: 20,
+  },
+  audioContainer: {
+    alignItems: 'flex-start',
+  },
+  sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
-  footerQuote: {
+  bodyText: {
     fontSize: 14,
-    color: COLORS.black,
-    fontStyle: 'italic',
-    marginTop: 20,
+    marginBottom: 10,
+  },
+  buttonSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  startButton: {
+    backgroundColor: theme.COLORS.primary,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+  },
+  startButtonText: {
+    color: theme.COLORS.white,
+    fontSize: 18,
   },
 });
 
