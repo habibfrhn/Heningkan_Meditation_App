@@ -6,9 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
-  PanResponder,
   Vibration,
-  GestureResponderEvent,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import theme from './theme';
@@ -71,19 +69,8 @@ const TimerScreen: React.FC = () => {
     }
   };
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <View style={styles.container}>
-      {/* Timer Text Section */}
-      <View style={styles.timerTextSection}>
-        <Text style={styles.timerText}>Your timer is set to {selectedTime} min</Text>
-      </View>
-
       {/* Timer Circle Section */}
       <View style={styles.timerCircleSection}>
         <View style={styles.timerCircle}>
@@ -93,7 +80,10 @@ const TimerScreen: React.FC = () => {
               { transform: [{ scale: circleScale }] },
             ]}
           />
-          <View style={styles.innerCircle} />
+          <View style={styles.innerCircle}>
+            <Text style={styles.timerTextSmall}>Your timer is set to</Text>
+            <Text style={styles.timerTextLarge}>{selectedTime} min</Text>
+          </View>
         </View>
       </View>
 
@@ -127,6 +117,9 @@ const TimerScreen: React.FC = () => {
         <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Bell Selection</Text>
           <Text style={styles.bodyText}>Nano Bell</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Ambient Sound</Text>
           <Text style={styles.bodyText}>Theta Waves</Text>
         </View>
@@ -154,20 +147,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 30,
   },
-  timerTextSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
   timerCircleSection: {
-    flex: 4,
-    justifyContent: 'center',
+    flex: 2, // Keep the circle section at the top
+    justifyContent: 'flex-end', // Align the circle to the bottom of the section
     alignItems: 'center',
+    paddingTop: 40, // Increased padding to create more space from the top of the screen
+    paddingBottom: 30, // Maintain spacing between the circle and the minutes selection
+  },
+  durationsSection: {
+    flex: 1,
+    justifyContent: 'flex-start', // Align the durations closer to the top
+    alignItems: 'center',
+    paddingTop: 10, // Small padding to control spacing
   },
   timerCircle: {
     justifyContent: 'center',
@@ -186,14 +177,26 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 90,
     backgroundColor: theme.COLORS.white,
-  },
-  durationsSection: {
-    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+  timerTextSmall: {
+    fontSize: 14,
+    color: theme.COLORS.black,
+    textAlign: 'center',
+  },
+  timerTextLarge: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: theme.COLORS.primary,
+    textAlign: 'center',
+    marginTop: 5,
   },
   durationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    width: '100%',
   },
   durationButton: {
     backgroundColor: theme.COLORS.background,
@@ -214,6 +217,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: theme.COLORS.black,
     paddingTop: 20,
+  },
+  divider: {
+    borderBottomWidth: 1,
+    borderColor: theme.COLORS.black,
+    marginVertical: 10,
+    width: '100%',
   },
   audioContainer: {
     alignItems: 'flex-start',
