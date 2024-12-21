@@ -7,22 +7,60 @@ import {
   Alert,
   Animated,
   Vibration,
+  Dimensions,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import theme from './theme';
+import BellSelectionModal from './bellSelectionModal'; // <-- Note the new name here
 
+// Layout constants
+const { width } = Dimensions.get('window');
+const MODAL_PADDING = 12;  // Internal padding for the modal
+const BOX_MARGIN = 10;     // Margin between boxes and rows
+const modalWidth = width * 0.9; 
+/*
+  BOX_SIZE formula:
+  - The modal is `modalWidth` wide.
+  - There's left + right padding on the modal: (2 * MODAL_PADDING).
+  - There's 1 horizontal gap between two boxes: BOX_MARGIN.
+  => Subtract those from the total width before dividing by 2.
+*/
+const BOX_SIZE = (modalWidth - (2 * MODAL_PADDING + BOX_MARGIN)) / 2;
+
+// Timer/vibration constants
 const MAX_DURATION = 60;
 const SECTIONS = [10, 20, 30, 40];
 const VIBRATION_PATTERN = [100, 200, 300];
 
 const TimerScreen: React.FC = () => {
+  // Timer state
   const [selectedTime, setSelectedTime] = useState<number>(20);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Bell/Audio state
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [previewSound, setPreviewSound] = useState<Audio.Sound | null>(null);
+
+  // Modal + bell selection
+  const [bellModalVisible, setBellModalVisible] = useState(false);
+  const [tempSelectedBell, setTempSelectedBell] = useState<string>('Aura Chime');
+  const [selectedBell, setSelectedBell] = useState<string>('Aura Chime');
+  const [bellSound, setBellSound] = useState<any>(null);
+
+  // Animations
   const animatedValue = useRef(new Animated.Value(selectedTime)).current;
   const circleScale = useRef(new Animated.Value(1)).current;
 
+  // Bell options array
+  const bellOptions = [
+    { name: 'No Sound', sound: null },
+    { name: 'Aura Chime', sound: require('../assets/audio/bell/bell1.mp3') },
+    { name: 'Zen Whisper', sound: require('../assets/audio/bell/bell2.mp3') },
+    { name: 'Celestial Ring', sound: require('../assets/audio/bell/bell3.mp3') },
+  ];
+
+  /* -------------------- useEffects -------------------- */
   useEffect(() => {
     Animated.timing(animatedValue, {
       toValue: selectedTime,
@@ -40,15 +78,49 @@ const TimerScreen: React.FC = () => {
     }
   }, [remainingTime]);
 
+  /* -------------------- Timer/Bell Logic -------------------- */
   const playBellSound = async () => {
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        require('../assets/audio/MeditationEnding.mp3')
-      );
-      setSound(sound);
-      await sound.playAsync();
-    } catch (err) {
-      console.error('Error loading bell sound:', err);
+    if (bellSound) {
+      try {
+        const { sound: finalBell } = await Audio.Sound.createAsync(bellSound);
+        setSound(finalBell);
+        await finalBell.playAsync();
+      } catch (err) {
+        console.error('Error playing bell sound:', err);
+      }
+    }
+  };
+
+  const playPreviewSound = async (soundAsset: any) => {
+    // Stop any existing preview
+    if (previewSound) {
+      await previewSound.stopAsync();
+      await previewSound.unloadAsync();
+    }
+
+    if (soundAsset) {
+      try {
+        const { sound: newPreviewSound } = await Audio.Sound.createAsync(soundAsset);
+        setPreviewSound(newPreviewSound);
+        await newPreviewSound.playAsync();
+
+        // Stop after 10 seconds
+        setTimeout(async () => {
+          if (newPreviewSound) {
+            await newPreviewSound.stopAsync();
+            await newPreviewSound.unloadAsync();
+          }
+        }, 10000);
+
+        // If it finishes sooner
+        newPreviewSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            newPreviewSound.unloadAsync();
+          }
+        });
+      } catch (err) {
+        console.error('Error playing preview sound:', err);
+      }
     }
   };
 
@@ -62,6 +134,7 @@ const TimerScreen: React.FC = () => {
     }).start();
   };
 
+  // Update the selected time in minutes
   const updateTime = (newMinutes: number) => {
     if (newMinutes >= 0 && newMinutes <= MAX_DURATION) {
       setSelectedTime(newMinutes);
@@ -69,17 +142,30 @@ const TimerScreen: React.FC = () => {
     }
   };
 
+  /* -------------------- Modal Logic -------------------- */
+  const handleBellSelection = (option: { name: string; sound: any }) => {
+    setTempSelectedBell(option.name);
+    if (option.sound) {
+      playPreviewSound(option.sound);
+    } else if (previewSound) {
+      previewSound.stopAsync();
+    }
+  };
+
+  const saveBellSelection = () => {
+    const chosenOption = bellOptions.find((option) => option.name === tempSelectedBell);
+    setSelectedBell(tempSelectedBell);
+    setBellSound(chosenOption?.sound || null);
+    setBellModalVisible(false);
+  };
+
+  /* -------------------- Render -------------------- */
   return (
     <View style={styles.container}>
       {/* Timer Circle Section */}
       <View style={styles.timerCircleSection}>
         <View style={styles.timerCircle}>
-          <Animated.View
-            style={[
-              styles.outerCircle,
-              { transform: [{ scale: circleScale }] },
-            ]}
-          />
+          <Animated.View style={[styles.outerCircle, { transform: [{ scale: circleScale }] }]} />
           <View style={styles.innerCircle}>
             <Text style={styles.timerTextSmall}>Your timer is set to</Text>
             <Text style={styles.timerTextLarge}>{selectedTime} min</Text>
@@ -87,7 +173,7 @@ const TimerScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Predefined Durations Section */}
+      {/* Quick Duration Buttons */}
       <View style={styles.durationsSection}>
         <View style={styles.durationContainer}>
           {SECTIONS.map((time) => (
@@ -112,24 +198,48 @@ const TimerScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Bell and Ambient Sound Section */}
+      {/* Audio Section (Bell + Ambient Sound) */}
       <View style={styles.audioSection}>
         <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Bell Selection</Text>
-          <Text style={styles.bodyText}>Nano Bell</Text>
+          <TouchableOpacity onPress={() => setBellModalVisible(true)}>
+            <Text style={styles.bodyText}>{selectedBell}</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.divider} />
         <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Ambient Sound</Text>
           <Text style={styles.bodyText}>Theta Waves</Text>
         </View>
+        <View style={styles.divider} />
       </View>
 
-      {/* Start Timer Button Section */}
+      {/* Bell Selection Modal (imported from bellSelectionModal.tsx) */}
+      <BellSelectionModal
+        visible={bellModalVisible}
+        onRequestClose={() => setBellModalVisible(false)}
+        bellOptions={bellOptions}
+        tempSelectedBell={tempSelectedBell}
+        onBellSelect={handleBellSelection}
+        onSave={saveBellSelection}
+        BOX_SIZE={BOX_SIZE}
+        BOX_MARGIN={BOX_MARGIN}
+        MODAL_PADDING={MODAL_PADDING}
+        modalWidth={modalWidth}
+      />
+
+      {/* Start/Stop Timer Button */}
       <View style={styles.buttonSection}>
         <TouchableOpacity
           style={styles.startButton}
-          onPress={isPlaying ? stopAndReset : () => setRemainingTime(selectedTime * 60)}
+          onPress={
+            isPlaying
+              ? stopAndReset
+              : () => {
+                  setRemainingTime(selectedTime * 60);
+                  setIsPlaying(true);
+                }
+          }
         >
           <Text style={styles.startButtonText}>
             {isPlaying ? 'Stop Timer' : 'Start Timer'}
@@ -140,25 +250,19 @@ const TimerScreen: React.FC = () => {
   );
 };
 
+/* ----------------------------------- STYLES ----------------------------------- */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.COLORS.background,
-    paddingHorizontal: 20,
-    paddingVertical: 30,
+    paddingHorizontal: 25,
+    paddingVertical: 20,
   },
   timerCircleSection: {
-    flex: 2, // Keep the circle section at the top
-    justifyContent: 'flex-end', // Align the circle to the bottom of the section
+    flex: 2,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 40, // Increased padding to create more space from the top of the screen
-    paddingBottom: 30, // Maintain spacing between the circle and the minutes selection
-  },
-  durationsSection: {
-    flex: 1,
-    justifyContent: 'flex-start', // Align the durations closer to the top
-    alignItems: 'center',
-    paddingTop: 10, // Small padding to control spacing
+    marginBottom: 10,
   },
   timerCircle: {
     justifyContent: 'center',
@@ -193,6 +297,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
+  durationsSection: {
+    flex: 0,
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
   durationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -216,25 +326,29 @@ const styles = StyleSheet.create({
     flex: 2,
     borderTopWidth: 1,
     borderColor: theme.COLORS.black,
-    paddingTop: 20,
   },
   divider: {
     borderBottomWidth: 1,
     borderColor: theme.COLORS.black,
-    marginVertical: 10,
     width: '100%',
   },
   audioContainer: {
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 25,
+    paddingBottom: 25,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
   },
   bodyText: {
     fontSize: 14,
-    marginBottom: 10,
+    color: theme.COLORS.black,
+    // If you have a custom theme font, uncomment:
+    // fontFamily: theme.FONTS.regular,
+    textAlign: 'left',
   },
   buttonSection: {
     flex: 1,
