@@ -9,9 +9,7 @@ import {
 } from 'react-native';
 import theme from './theme';
 
-/**
- * Type definitions for the bell option and props
- */
+/* ----------------------------------- TYPES ----------------------------------- */
 interface BellOption {
   name: string;
   sound: any;
@@ -19,11 +17,14 @@ interface BellOption {
 
 interface BellSelectionModalProps {
   visible: boolean;
-  onRequestClose: () => void;
+  // We pass in our own close function from TimerScreen
+  onCloseModal: () => void;
+
   bellOptions: BellOption[];
   tempSelectedBell: string;
   onBellSelect: (option: BellOption) => void;
   onSave: () => void;
+
   BOX_SIZE: number;
   BOX_MARGIN: number;
   MODAL_PADDING: number;
@@ -32,7 +33,7 @@ interface BellSelectionModalProps {
 
 const BellSelectionModal: React.FC<BellSelectionModalProps> = ({
   visible,
-  onRequestClose,
+  onCloseModal,
   bellOptions,
   tempSelectedBell,
   onBellSelect,
@@ -47,14 +48,15 @@ const BellSelectionModal: React.FC<BellSelectionModalProps> = ({
       transparent={true}
       visible={visible}
       animationType="slide"
-      onRequestClose={onRequestClose}
+      // For hardware back button on Android
+      onRequestClose={onCloseModal}
     >
       {/* Close modal if user taps outside overlay */}
-      <TouchableWithoutFeedback onPress={onRequestClose}>
+      <TouchableWithoutFeedback onPress={onCloseModal}>
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
             <View style={[styles.modalContent, { padding: MODAL_PADDING, width: '90%' }]}>
-              {/* 2×2 Grid of bell options */}
+              {/* 2×2 Grid */}
               <View style={[styles.modalGrid, { marginBottom: BOX_MARGIN }]}>
                 {/* First row */}
                 <View style={[styles.modalRow, { marginBottom: BOX_MARGIN }]}>
@@ -108,7 +110,13 @@ const BellSelectionModal: React.FC<BellSelectionModalProps> = ({
               </View>
 
               {/* Save Button */}
-              <TouchableOpacity style={styles.saveButton} onPress={onSave}>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  // Parent is responsible for stopping preview, then calling onSave
+                  onSave();
+                }}
+              >
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
             </View>

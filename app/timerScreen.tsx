@@ -11,15 +11,19 @@ import {
 } from 'react-native';
 import { Audio } from 'expo-av';
 import theme from './theme';
-import BellSelectionModal from './bellSelectionModal'; // <-- Note the new name here
+
+// Modals
+import BellSelectionModal from './bellSelectionModal';
+import AmbianceSelectionModal from './ambianceSelectionModal';
 
 // Layout constants
 const { width } = Dimensions.get('window');
 const MODAL_PADDING = 12;  // Internal padding for the modal
 const BOX_MARGIN = 10;     // Margin between boxes and rows
 const modalWidth = width * 0.9; 
+
 /*
-  BOX_SIZE formula:
+  BOX_SIZE formula (shared by both modals):
   - The modal is `modalWidth` wide.
   - There's left + right padding on the modal: (2 * MODAL_PADDING).
   - There's 1 horizontal gap between two boxes: BOX_MARGIN.
@@ -38,26 +42,39 @@ const TimerScreen: React.FC = () => {
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Bell/Audio state
+  // BELL states
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [previewSound, setPreviewSound] = useState<Audio.Sound | null>(null);
-
-  // Modal + bell selection
   const [bellModalVisible, setBellModalVisible] = useState(false);
   const [tempSelectedBell, setTempSelectedBell] = useState<string>('Aura Chime');
   const [selectedBell, setSelectedBell] = useState<string>('Aura Chime');
   const [bellSound, setBellSound] = useState<any>(null);
 
+  // AMBIANCE states
+  const [ambianceModalVisible, setAmbianceModalVisible] = useState(false);
+  // Default to "No Sound" (change if you want a different default)
+  const [tempSelectedAmbiance, setTempSelectedAmbiance] = useState<string>('No Sound'); 
+  const [selectedAmbiance, setSelectedAmbiance] = useState<string>('No Sound');
+  const [ambianceSound, setAmbianceSound] = useState<any>(null);
+  const [ambiancePreviewSound, setAmbiancePreviewSound] = useState<Audio.Sound | null>(null);
+
   // Animations
   const animatedValue = useRef(new Animated.Value(selectedTime)).current;
   const circleScale = useRef(new Animated.Value(1)).current;
 
-  // Bell options array
+  // Bell and Ambiance options
   const bellOptions = [
     { name: 'No Sound', sound: null },
     { name: 'Aura Chime', sound: require('../assets/audio/bell/bell1.mp3') },
     { name: 'Zen Whisper', sound: require('../assets/audio/bell/bell2.mp3') },
     { name: 'Celestial Ring', sound: require('../assets/audio/bell/bell3.mp3') },
+  ];
+
+  const ambianceOptions = [
+    { name: 'No Sound', sound: null },
+    { name: 'Rain', sound: require('../assets/audio/ambience/rain.mp3') },
+    { name: 'Campfire', sound: require('../assets/audio/ambience/campfire.mp3') },
+    { name: 'Wind Chimes', sound: require('../assets/audio/ambience/windChimes.mp3') },
   ];
 
   /* -------------------- useEffects -------------------- */
@@ -78,7 +95,7 @@ const TimerScreen: React.FC = () => {
     }
   }, [remainingTime]);
 
-  /* -------------------- Timer/Bell Logic -------------------- */
+  /* -------------------- Timer / Bell Logic -------------------- */
   const playBellSound = async () => {
     if (bellSound) {
       try {
@@ -92,10 +109,11 @@ const TimerScreen: React.FC = () => {
   };
 
   const playPreviewSound = async (soundAsset: any) => {
-    // Stop any existing preview
+    // Stop any existing preview for bells
     if (previewSound) {
       await previewSound.stopAsync();
       await previewSound.unloadAsync();
+      setPreviewSound(null);
     }
 
     if (soundAsset) {
@@ -109,6 +127,7 @@ const TimerScreen: React.FC = () => {
           if (newPreviewSound) {
             await newPreviewSound.stopAsync();
             await newPreviewSound.unloadAsync();
+            setPreviewSound(null);
           }
         }, 10000);
 
@@ -116,18 +135,27 @@ const TimerScreen: React.FC = () => {
         newPreviewSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
             newPreviewSound.unloadAsync();
+            setPreviewSound(null);
           }
         });
       } catch (err) {
-        console.error('Error playing preview sound:', err);
+        console.error('Error playing bell preview sound:', err);
       }
     }
   };
 
   const stopAndReset = () => {
-    if (sound) sound.unloadAsync();
+    if (sound) {
+      sound.unloadAsync();
+      setSound(null);
+    }
+    if (ambianceSound) {
+      ambianceSound.unloadAsync();
+      setAmbianceSound(null);
+    }
     setRemainingTime(null);
     setIsPlaying(false);
+
     Animated.spring(circleScale, {
       toValue: 1,
       useNativeDriver: true,
@@ -142,7 +170,7 @@ const TimerScreen: React.FC = () => {
     }
   };
 
-  /* -------------------- Modal Logic -------------------- */
+  /* -------------------- Bell Modal Logic -------------------- */
   const handleBellSelection = (option: { name: string; sound: any }) => {
     setTempSelectedBell(option.name);
     if (option.sound) {
@@ -152,11 +180,102 @@ const TimerScreen: React.FC = () => {
     }
   };
 
-  const saveBellSelection = () => {
+  const saveBellSelection = async () => {
+    // Stop any bell preview before closing
+    if (previewSound) {
+      await previewSound.stopAsync();
+      await previewSound.unloadAsync();
+      setPreviewSound(null);
+    }
+
     const chosenOption = bellOptions.find((option) => option.name === tempSelectedBell);
     setSelectedBell(tempSelectedBell);
     setBellSound(chosenOption?.sound || null);
     setBellModalVisible(false);
+  };
+
+  // Closes the bell modal (tap outside or hardware back)
+  // Also stop/unload any playing preview
+  const handleCloseBellModal = async () => {
+    setBellModalVisible(false);
+    if (previewSound) {
+      await previewSound.stopAsync();
+      await previewSound.unloadAsync();
+      setPreviewSound(null);
+    }
+  };
+
+  /* -------------------- Ambiance Modal Logic -------------------- */
+  const playAmbiancePreviewSound = async (soundAsset: any) => {
+    // Stop any existing ambiance preview
+    if (ambiancePreviewSound) {
+      await ambiancePreviewSound.stopAsync();
+      await ambiancePreviewSound.unloadAsync();
+      setAmbiancePreviewSound(null);
+    }
+
+    if (soundAsset) {
+      try {
+        const { sound: newPreview } = await Audio.Sound.createAsync(soundAsset);
+        setAmbiancePreviewSound(newPreview);
+        await newPreview.playAsync();
+
+        // Stop after 10 seconds
+        setTimeout(async () => {
+          if (newPreview) {
+            await newPreview.stopAsync();
+            await newPreview.unloadAsync();
+            setAmbiancePreviewSound(null);
+          }
+        }, 10000);
+
+        // If finishes sooner
+        newPreview.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            newPreview.unloadAsync();
+            setAmbiancePreviewSound(null);
+          }
+        });
+      } catch (err) {
+        console.error('Error playing ambiance preview sound:', err);
+      }
+    }
+  };
+
+  const handleAmbianceSelection = (option: { name: string; sound: any }) => {
+    setTempSelectedAmbiance(option.name);
+    if (option.sound) {
+      playAmbiancePreviewSound(option.sound);
+    } else if (ambiancePreviewSound) {
+      ambiancePreviewSound.stopAsync();
+    }
+  };
+
+  const saveAmbianceSelection = async () => {
+    // Stop any ambiance preview before closing
+    if (ambiancePreviewSound) {
+      await ambiancePreviewSound.stopAsync();
+      await ambiancePreviewSound.unloadAsync();
+      setAmbiancePreviewSound(null);
+    }
+
+    const chosenOption = ambianceOptions.find(
+      (option) => option.name === tempSelectedAmbiance
+    );
+    setSelectedAmbiance(tempSelectedAmbiance);
+    setAmbianceSound(chosenOption?.sound || null);
+    setAmbianceModalVisible(false);
+  };
+
+  // Closes the ambiance modal (tap outside or hardware back)
+  // Also stop/unload any playing preview
+  const handleCloseAmbianceModal = async () => {
+    setAmbianceModalVisible(false);
+    if (ambiancePreviewSound) {
+      await ambiancePreviewSound.stopAsync();
+      await ambiancePreviewSound.unloadAsync();
+      setAmbiancePreviewSound(null);
+    }
   };
 
   /* -------------------- Render -------------------- */
@@ -200,6 +319,7 @@ const TimerScreen: React.FC = () => {
 
       {/* Audio Section (Bell + Ambient Sound) */}
       <View style={styles.audioSection}>
+        {/* Bell Selection */}
         <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Bell Selection</Text>
           <TouchableOpacity onPress={() => setBellModalVisible(true)}>
@@ -207,21 +327,41 @@ const TimerScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.divider} />
+
+        {/* Ambiance Selection */}
         <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Ambient Sound</Text>
-          <Text style={styles.bodyText}>Theta Waves</Text>
+          <TouchableOpacity onPress={() => setAmbianceModalVisible(true)}>
+            <Text style={styles.bodyText}>{selectedAmbiance}</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.divider} />
       </View>
 
-      {/* Bell Selection Modal (imported from bellSelectionModal.tsx) */}
+      {/* Bell Selection Modal */}
       <BellSelectionModal
         visible={bellModalVisible}
-        onRequestClose={() => setBellModalVisible(false)}
+        // Our custom close function
+        onCloseModal={handleCloseBellModal}
         bellOptions={bellOptions}
         tempSelectedBell={tempSelectedBell}
         onBellSelect={handleBellSelection}
         onSave={saveBellSelection}
+        BOX_SIZE={BOX_SIZE}
+        BOX_MARGIN={BOX_MARGIN}
+        MODAL_PADDING={MODAL_PADDING}
+        modalWidth={modalWidth}
+      />
+
+      {/* Ambiance Selection Modal */}
+      <AmbianceSelectionModal
+        visible={ambianceModalVisible}
+        // Our custom close function
+        onCloseModal={handleCloseAmbianceModal}
+        ambianceOptions={ambianceOptions}
+        tempSelectedAmbiance={tempSelectedAmbiance}
+        onAmbianceSelect={handleAmbianceSelection}
+        onSave={saveAmbianceSelection}
         BOX_SIZE={BOX_SIZE}
         BOX_MARGIN={BOX_MARGIN}
         MODAL_PADDING={MODAL_PADDING}
@@ -298,7 +438,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   durationsSection: {
-    flex: 0,
     justifyContent: 'space-evenly',
     alignItems: 'center',
     paddingBottom: 20,
@@ -346,8 +485,6 @@ const styles = StyleSheet.create({
   bodyText: {
     fontSize: 14,
     color: theme.COLORS.black,
-    // If you have a custom theme font, uncomment:
-    // fontFamily: theme.FONTS.regular,
     textAlign: 'left',
   },
   buttonSection: {
