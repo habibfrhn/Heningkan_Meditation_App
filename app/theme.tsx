@@ -6,6 +6,7 @@ export const COLORS = {
   white: '#FFFFFF',
   black: '#000000',
   primary: '#F4CE14',
+  // Removed 'danger' color
 };
 
 // Define reusable fonts

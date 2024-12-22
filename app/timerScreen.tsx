@@ -8,8 +8,12 @@ import {
   Animated,
   Vibration,
   Dimensions,
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
 } from 'react-native';
 import { Audio } from 'expo-av';
+import Svg, { Circle, G } from 'react-native-svg';
 import theme from './theme';
 
 // Modals
@@ -36,22 +40,34 @@ const MAX_DURATION = 60;
 const SECTIONS = [10, 20, 30, 40];
 const VIBRATION_PATTERN = [100, 200, 300];
 
+// Helper function to convert degrees to radians
+const degToRad = (deg: number): number => (deg * Math.PI) / 180;
+
+// Helper function to calculate angle from x,y coordinates
+const calculateAngle = (x: number, y: number, centerX: number, centerY: number): number => {
+  const dx = x - centerX;
+  const dy = y - centerY;
+  let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+  if (angle < 0) angle += 360;
+  return angle;
+};
+
 const TimerScreen: React.FC = () => {
   // Timer state
   const [selectedTime, setSelectedTime] = useState<number>(20);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   // BELL states
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [previewSound, setPreviewSound] = useState<Audio.Sound | null>(null);
-  const [bellModalVisible, setBellModalVisible] = useState(false);
+  const [bellModalVisible, setBellModalVisible] = useState<boolean>(false);
   const [tempSelectedBell, setTempSelectedBell] = useState<string>('Aura Chime');
   const [selectedBell, setSelectedBell] = useState<string>('Aura Chime');
   const [bellSound, setBellSound] = useState<any>(null);
 
   // AMBIANCE states
-  const [ambianceModalVisible, setAmbianceModalVisible] = useState(false);
+  const [ambianceModalVisible, setAmbianceModalVisible] = useState<boolean>(false);
   // Default to "No Sound" (change if you want a different default)
   const [tempSelectedAmbiance, setTempSelectedAmbiance] = useState<string>('No Sound'); 
   const [selectedAmbiance, setSelectedAmbiance] = useState<string>('No Sound');
@@ -60,7 +76,30 @@ const TimerScreen: React.FC = () => {
 
   // Animations
   const animatedValue = useRef(new Animated.Value(selectedTime)).current;
-  const circleScale = useRef(new Animated.Value(1)).current;
+
+  // Circular Slider Constants
+  const CIRCLE_SIZE = 220;
+  const STROKE_WIDTH = 10;
+  const RADIUS = (CIRCLE_SIZE - STROKE_WIDTH) / 2;
+  const CENTER = CIRCLE_SIZE / 2;
+  const circumference = 2 * Math.PI * RADIUS;
+
+  const [angle, setAngle] = useState<number>((selectedTime / MAX_DURATION) * 360);
+
+  const pan = useRef({ x: 0, y: 0 }).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+        handleGesture(evt.nativeEvent);
+      },
+      onPanResponderMove: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+        handleGesture(evt.nativeEvent);
+      },
+      onPanResponderRelease: () => {},
+    })
+  ).current;
 
   // Bell and Ambiance options
   const bellOptions = [
@@ -77,13 +116,15 @@ const TimerScreen: React.FC = () => {
     { name: 'Wind Chimes', sound: require('../assets/audio/ambience/windChimes.mp3') },
   ];
 
-  /* -------------------- useEffects -------------------- */
+  // Update angle when selectedTime changes
   useEffect(() => {
+    const newAngle = (selectedTime / MAX_DURATION) * 360;
     Animated.timing(animatedValue, {
-      toValue: selectedTime,
-      duration: 500,
+      toValue: newAngle,
+      duration: 300,
       useNativeDriver: false,
     }).start();
+    setAngle(newAngle);
   }, [selectedTime]);
 
   useEffect(() => {
@@ -155,19 +196,14 @@ const TimerScreen: React.FC = () => {
     }
     setRemainingTime(null);
     setIsPlaying(false);
-
-    Animated.spring(circleScale, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
   };
 
-  // Update the selected time in minutes
-  const updateTime = (newMinutes: number) => {
-    if (newMinutes >= 0 && newMinutes <= MAX_DURATION) {
-      setSelectedTime(newMinutes);
-      Vibration.vibrate(50);
-    }
+  // Update the selected time in minutes based on angle
+  const handleGesture = (nativeEvent: any) => {
+    const { locationX, locationY } = nativeEvent;
+    const calculatedAngle = calculateAngle(locationX, locationY, CENTER, CENTER);
+    const newTime = Math.min(Math.max(Math.round((calculatedAngle / 360) * MAX_DURATION), 1), MAX_DURATION);
+    setSelectedTime(newTime);
   };
 
   /* -------------------- Bell Modal Logic -------------------- */
@@ -284,7 +320,50 @@ const TimerScreen: React.FC = () => {
       {/* Timer Circle Section */}
       <View style={styles.timerCircleSection}>
         <View style={styles.timerCircle}>
-          <Animated.View style={[styles.outerCircle, { transform: [{ scale: circleScale }] }]} />
+          {/* Circular Slider */}
+          <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
+            <G rotation="-90" origin={`${CENTER}, ${CENTER}`}>
+              {/* Background Circle */}
+              <Circle
+                cx={CENTER}
+                cy={CENTER}
+                r={RADIUS}
+                stroke={theme.COLORS.background}
+                strokeWidth={STROKE_WIDTH}
+                fill="none"
+              />
+              {/* Progress Circle */}
+              <Circle
+                cx={CENTER}
+                cy={CENTER}
+                r={RADIUS}
+                stroke={theme.COLORS.primary}
+                strokeWidth={STROKE_WIDTH}
+                strokeDasharray={`${(angle / 360) * circumference} ${circumference}`}
+                strokeLinecap="round"
+                fill="none"
+              />
+              {/* Draggable Handle */}
+              <Circle
+                cx={CENTER + RADIUS * Math.cos(degToRad(angle))}
+                cy={CENTER + RADIUS * Math.sin(degToRad(angle))}
+                r={12}
+                fill={theme.COLORS.primary}
+              />
+            </G>
+            {/* Invisible Circle for Touch Handling */}
+            <G {...panResponder.panHandlers}>
+              <Circle
+                cx={CENTER}
+                cy={CENTER}
+                r={RADIUS + STROKE_WIDTH}
+                stroke="transparent"
+                fill="transparent"
+              />
+            </G>
+          </Svg>
+
+          {/* Inner Circle */}
           <View style={styles.innerCircle}>
             <Text style={styles.timerTextSmall}>Your timer is set to</Text>
             <Text style={styles.timerTextLarge}>{selectedTime} min</Text>
@@ -302,7 +381,7 @@ const TimerScreen: React.FC = () => {
                 styles.durationButton,
                 selectedTime === time && styles.activeDurationButton,
               ]}
-              onPress={() => updateTime(time)}
+              onPress={() => setSelectedTime(time)}
             >
               <Text
                 style={[
@@ -408,15 +487,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  outerCircle: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 10,
-    borderColor: theme.COLORS.primary,
-    position: 'absolute',
-  },
   innerCircle: {
+    position: 'absolute',
     width: 180,
     height: 180,
     borderRadius: 90,
@@ -457,9 +529,12 @@ const styles = StyleSheet.create({
   },
   durationButtonText: {
     textAlign: 'center',
+    fontSize: 16,
+    color: theme.COLORS.black,
   },
   activeDurationText: {
     color: theme.COLORS.white,
+    fontWeight: 'bold',
   },
   audioSection: {
     flex: 2,
