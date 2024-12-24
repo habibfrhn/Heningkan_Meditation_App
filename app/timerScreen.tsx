@@ -22,9 +22,9 @@ import AmbianceSelectionModal from './ambianceSelectionModal';
 
 // Layout constants
 const { width } = Dimensions.get('window');
-const MODAL_PADDING = 12;  // Internal padding for the modal
-const BOX_MARGIN = 10;     // Margin between boxes and rows
-const modalWidth = width * 0.9; 
+const MODAL_PADDING = 12; // Internal padding for the modal
+const BOX_MARGIN = 10; // Margin between boxes and rows
+const modalWidth = width * 0.9;
 
 /*
   BOX_SIZE formula (shared by both modals):
@@ -56,11 +56,11 @@ const TimerScreen: React.FC = () => {
 
   // AMBIANCE states
   const [ambianceModalVisible, setAmbianceModalVisible] = useState<boolean>(false);
-  // Default to "No Sound" (change if you want a different default)
-  const [tempSelectedAmbiance, setTempSelectedAmbiance] = useState<string>('No Sound'); 
+  const [tempSelectedAmbiance, setTempSelectedAmbiance] = useState<string>('No Sound');
   const [selectedAmbiance, setSelectedAmbiance] = useState<string>('No Sound');
   const [ambianceSound, setAmbianceSound] = useState<any>(null);
-  const [ambiancePreviewSound, setAmbiancePreviewSound] = useState<Audio.Sound | null>(null);
+  const [ambiancePreviewSound, setAmbiancePreviewSound] =
+    useState<Audio.Sound | null>(null);
 
   // Bell and Ambiance options
   const bellOptions = [
@@ -77,7 +77,6 @@ const TimerScreen: React.FC = () => {
     { name: 'Wind Chimes', sound: require('../assets/audio/ambience/windChimes.mp3') },
   ];
 
-  // Effect to handle timer countdown
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && remainingTime !== null && remainingTime > 0) {
@@ -93,7 +92,6 @@ const TimerScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [isPlaying, remainingTime]);
 
-  /* -------------------- Timer / Bell Logic -------------------- */
   const playBellSound = async () => {
     if (bellSound) {
       try {
@@ -107,7 +105,6 @@ const TimerScreen: React.FC = () => {
   };
 
   const playPreviewSound = async (soundAsset: any) => {
-    // Stop any existing preview for bells
     if (previewSound) {
       await previewSound.stopAsync();
       await previewSound.unloadAsync();
@@ -120,7 +117,6 @@ const TimerScreen: React.FC = () => {
         setPreviewSound(newPreviewSound);
         await newPreviewSound.playAsync();
 
-        // Stop after 10 seconds
         setTimeout(async () => {
           if (newPreviewSound) {
             await newPreviewSound.stopAsync();
@@ -129,7 +125,6 @@ const TimerScreen: React.FC = () => {
           }
         }, 10000);
 
-        // If it finishes sooner
         newPreviewSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
             newPreviewSound.unloadAsync();
@@ -155,7 +150,6 @@ const TimerScreen: React.FC = () => {
     setIsPlaying(false);
   };
 
-  /* -------------------- Bell Modal Logic -------------------- */
   const handleBellSelection = (option: { name: string; sound: any }) => {
     setTempSelectedBell(option.name);
     if (option.sound) {
@@ -166,7 +160,6 @@ const TimerScreen: React.FC = () => {
   };
 
   const saveBellSelection = async () => {
-    // Stop any bell preview before closing
     if (previewSound) {
       await previewSound.stopAsync();
       await previewSound.unloadAsync();
@@ -179,8 +172,6 @@ const TimerScreen: React.FC = () => {
     setBellModalVisible(false);
   };
 
-  // Closes the bell modal (tap outside or hardware back)
-  // Also stop/unload any playing preview
   const handleCloseBellModal = async () => {
     setBellModalVisible(false);
     if (previewSound) {
@@ -190,9 +181,7 @@ const TimerScreen: React.FC = () => {
     }
   };
 
-  /* -------------------- Ambiance Modal Logic -------------------- */
   const playAmbiancePreviewSound = async (soundAsset: any) => {
-    // Stop any existing ambiance preview
     if (ambiancePreviewSound) {
       await ambiancePreviewSound.stopAsync();
       await ambiancePreviewSound.unloadAsync();
@@ -205,7 +194,6 @@ const TimerScreen: React.FC = () => {
         setAmbiancePreviewSound(newPreview);
         await newPreview.playAsync();
 
-        // Stop after 10 seconds
         setTimeout(async () => {
           if (newPreview) {
             await newPreview.stopAsync();
@@ -214,7 +202,6 @@ const TimerScreen: React.FC = () => {
           }
         }, 10000);
 
-        // If finishes sooner
         newPreview.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
             newPreview.unloadAsync();
@@ -237,7 +224,6 @@ const TimerScreen: React.FC = () => {
   };
 
   const saveAmbianceSelection = async () => {
-    // Stop any ambiance preview before closing
     if (ambiancePreviewSound) {
       await ambiancePreviewSound.stopAsync();
       await ambiancePreviewSound.unloadAsync();
@@ -252,8 +238,6 @@ const TimerScreen: React.FC = () => {
     setAmbianceModalVisible(false);
   };
 
-  // Closes the ambiance modal (tap outside or hardware back)
-  // Also stop/unload any playing preview
   const handleCloseAmbianceModal = async () => {
     setAmbianceModalVisible(false);
     if (ambiancePreviewSound) {
@@ -263,10 +247,8 @@ const TimerScreen: React.FC = () => {
     }
   };
 
-  /* -------------------- Render -------------------- */
   return (
     <View style={styles.container}>
-      {/* Timer Circle Section */}
       <View style={styles.timerCircleSection}>
         <TimerCircle
           selectedTime={selectedTime}
@@ -274,8 +256,6 @@ const TimerScreen: React.FC = () => {
           maxDuration={MAX_DURATION}
         />
       </View>
-
-      {/* Quick Duration Buttons */}
       <View style={styles.durationsSection}>
         <View style={styles.durationContainer}>
           {SECTIONS.map((time) => (
@@ -299,10 +279,7 @@ const TimerScreen: React.FC = () => {
           ))}
         </View>
       </View>
-
-      {/* Audio Section (Bell + Ambient Sound) */}
       <View style={styles.audioSection}>
-        {/* Bell Selection */}
         <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Bell Selection</Text>
           <TouchableOpacity onPress={() => setBellModalVisible(true)}>
@@ -310,8 +287,6 @@ const TimerScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.divider} />
-
-        {/* Ambiance Selection */}
         <View style={styles.audioContainer}>
           <Text style={styles.sectionTitle}>Ambient Sound</Text>
           <TouchableOpacity onPress={() => setAmbianceModalVisible(true)}>
@@ -320,11 +295,8 @@ const TimerScreen: React.FC = () => {
         </View>
         <View style={styles.divider} />
       </View>
-
-      {/* Bell Selection Modal */}
       <BellSelectionModal
         visible={bellModalVisible}
-        // Our custom close function
         onCloseModal={handleCloseBellModal}
         bellOptions={bellOptions}
         tempSelectedBell={tempSelectedBell}
@@ -335,11 +307,8 @@ const TimerScreen: React.FC = () => {
         MODAL_PADDING={MODAL_PADDING}
         modalWidth={modalWidth}
       />
-
-      {/* Ambiance Selection Modal */}
       <AmbianceSelectionModal
         visible={ambianceModalVisible}
-        // Our custom close function
         onCloseModal={handleCloseAmbianceModal}
         ambianceOptions={ambianceOptions}
         tempSelectedAmbiance={tempSelectedAmbiance}
@@ -350,8 +319,6 @@ const TimerScreen: React.FC = () => {
         MODAL_PADDING={MODAL_PADDING}
         modalWidth={modalWidth}
       />
-
-      {/* Start/Stop Timer Button */}
       <View style={styles.buttonSection}>
         <TouchableOpacity
           style={styles.startButton}
@@ -373,7 +340,6 @@ const TimerScreen: React.FC = () => {
   );
 };
 
-/* ----------------------------------- STYLES ----------------------------------- */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
