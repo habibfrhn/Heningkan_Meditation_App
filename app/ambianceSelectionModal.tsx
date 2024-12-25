@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  Vibration,
 } from 'react-native';
 import theme from './theme';
 
@@ -17,14 +18,11 @@ interface AmbianceOption {
 
 interface AmbianceSelectionModalProps {
   visible: boolean;
-  // We pass in our own close function from TimerScreen
   onCloseModal: () => void;
-
   ambianceOptions: AmbianceOption[];
   tempSelectedAmbiance: string;
   onAmbianceSelect: (option: AmbianceOption) => void;
   onSave: () => void;
-
   BOX_SIZE: number;
   BOX_MARGIN: number;
   MODAL_PADDING: number;
@@ -43,82 +41,91 @@ const AmbianceSelectionModal: React.FC<AmbianceSelectionModalProps> = ({
   MODAL_PADDING,
   modalWidth,
 }) => {
+  const handleBoxPress = (option: AmbianceOption) => {
+    Vibration.vibrate(50); // Vibrates for 50 milliseconds when an ambiance option is clicked
+    onAmbianceSelect(option);
+  };
+
+  const handleSavePress = () => {
+    Vibration.vibrate(100); // Vibrates for 100 milliseconds when Save is clicked
+    onSave();
+  };
+
   return (
     <Modal
       transparent={true}
       visible={visible}
       animationType="slide"
-      // For hardware back button on Android
       onRequestClose={onCloseModal}
     >
-      {/* Close modal if user taps outside overlay */}
       <TouchableWithoutFeedback onPress={onCloseModal}>
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
             <View style={[styles.modalContent, { padding: MODAL_PADDING, width: '90%' }]}>
-              {/* 2×2 Grid of ambiance options */}
               <View style={[styles.modalGrid, { marginBottom: BOX_MARGIN }]}>
-                {/* First row */}
                 <View style={[styles.modalRow, { marginBottom: BOX_MARGIN }]}>
                   <TouchableOpacity
                     style={[
                       styles.modalOption,
                       { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[0].name && styles.activeModalOption,
+                      tempSelectedAmbiance === ambianceOptions[0]?.name && styles.activeModalOption,
                     ]}
-                    onPress={() => onAmbianceSelect(ambianceOptions[0])}
+                    onPress={() => handleBoxPress(ambianceOptions[0])}
                   >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[0].name}</Text>
+                    <Text style={styles.modalOptionText}>{ambianceOptions[0]?.name}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[
                       styles.modalOption,
                       { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[1].name && styles.activeModalOption,
+                      tempSelectedAmbiance === ambianceOptions[1]?.name && styles.activeModalOption,
                     ]}
-                    onPress={() => onAmbianceSelect(ambianceOptions[1])}
+                    onPress={() => handleBoxPress(ambianceOptions[1])}
                   >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[1].name}</Text>
+                    <Text style={styles.modalOptionText}>{ambianceOptions[1]?.name}</Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Second row */}
                 <View style={[styles.modalRow, { marginBottom: BOX_MARGIN }]}>
                   <TouchableOpacity
                     style={[
                       styles.modalOption,
                       { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[2].name && styles.activeModalOption,
+                      tempSelectedAmbiance === ambianceOptions[2]?.name && styles.activeModalOption,
                     ]}
-                    onPress={() => onAmbianceSelect(ambianceOptions[2])}
+                    onPress={() => handleBoxPress(ambianceOptions[2])}
                   >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[2].name}</Text>
+                    <Text style={styles.modalOptionText}>{ambianceOptions[2]?.name}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[
                       styles.modalOption,
                       { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[3].name && styles.activeModalOption,
+                      tempSelectedAmbiance === ambianceOptions[3]?.name && styles.activeModalOption,
                     ]}
-                    onPress={() => onAmbianceSelect(ambianceOptions[3])}
+                    onPress={() => handleBoxPress(ambianceOptions[3])}
                   >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[3].name}</Text>
+                    <Text style={styles.modalOptionText}>{ambianceOptions[3]?.name}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              {/* Save Button */}
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={() => {
-                  // Parent is responsible for stopping preview, then calling onSave
-                  onSave();
-                }}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
+              <View style={[styles.buttonContainer, { marginTop: BOX_MARGIN / 2 }]}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={onCloseModal}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSavePress}
+                >
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -158,15 +165,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.COLORS.black,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: theme.COLORS.black,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
   saveButton: {
-    padding: 15,
-    borderRadius: 5,
     backgroundColor: theme.COLORS.primary,
-    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 10,
   },
   saveButtonText: {
-    fontSize: 16,
     color: theme.COLORS.white,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
 });
 
