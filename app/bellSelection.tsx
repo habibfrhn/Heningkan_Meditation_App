@@ -1,6 +1,6 @@
 // bellSelection.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
 import BellSelectionModal from './bellSelectionModal';
@@ -28,71 +28,89 @@ const BellSelection: React.FC<BellSelectionProps> = ({
   modalWidth,
   onBellChange,
 }) => {
-  // Bell states
-  const [bellModalVisible, setBellModalVisible] = useState<boolean>(false);
-  const [tempSelectedBell, setTempSelectedBell] = useState<string>('Aura Chime');
-  const [previewSound, setPreviewSound] = useState<Audio.Sound | null>(null);
+  const [bellModalVisible, setBellModalVisible] = useState(false);
+  const [tempSelectedBell, setTempSelectedBell] = useState('Aura Chime');
+  const [audioPool, setAudioPool] = useState<{ [key: string]: Audio.Sound | null }>({});
+  const [currentPlaying, setCurrentPlaying] = useState<string | null>(null);
 
-  const handleBellSelection = (option: BellOption) => {
+  // Preload audio on component mount
+  useEffect(() => {
+    const preloadSounds = async () => {
+      const pool: { [key: string]: Audio.Sound | null } = {};
+      for (const option of bellOptions) {
+        if (option.sound) {
+          try {
+            const { sound } = await Audio.Sound.createAsync(option.sound);
+            pool[option.name] = sound;
+          } catch (err) {
+            console.error(`Error preloading sound for ${option.name}:`, err);
+            pool[option.name] = null;
+          }
+        }
+      }
+      setAudioPool(pool);
+    };
+
+    preloadSounds();
+
+    // Cleanup on unmount
+    return () => {
+      Object.values(audioPool).forEach(async (sound) => {
+        if (sound) {
+          await sound.unloadAsync();
+        }
+      });
+    };
+  }, [bellOptions]);
+
+  const handleBellSelection = async (option: BellOption) => {
+    if (currentPlaying && currentPlaying !== option.name) {
+      await stopCurrentPlayingAudio();
+    }
+
     setTempSelectedBell(option.name);
-    if (option.sound) {
-      playPreviewSound(option.sound);
-    } else if (previewSound) {
-      previewSound.stopAsync();
+
+    if (option.sound && audioPool[option.name]) {
+      playPreviewSound(option.name);
     }
   };
 
-  const playPreviewSound = async (soundAsset: any) => {
-    if (previewSound) {
-      await previewSound.stopAsync();
-      await previewSound.unloadAsync();
-      setPreviewSound(null);
-    }
-
-    if (soundAsset) {
+  const playPreviewSound = async (name: string) => {
+    const sound = audioPool[name];
+    if (sound) {
       try {
-        const { sound: newPreviewSound } = await Audio.Sound.createAsync(soundAsset);
-        setPreviewSound(newPreviewSound);
-        await newPreviewSound.playAsync();
-
-        setTimeout(async () => {
-          if (newPreviewSound) {
-            await newPreviewSound.stopAsync();
-            await newPreviewSound.unloadAsync();
-            setPreviewSound(null);
-          }
-        }, 10000);
-
-        newPreviewSound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            newPreviewSound.unloadAsync();
-            setPreviewSound(null);
-          }
-        });
+        setCurrentPlaying(name);
+        await sound.playAsync();
       } catch (err) {
-        console.error('Error playing bell preview sound:', err);
+        console.error(`Error playing sound ${name}:`, err);
       }
     }
   };
 
-  const saveBellSelection = () => {
+  const stopCurrentPlayingAudio = async () => {
+    if (currentPlaying && audioPool[currentPlaying]) {
+      try {
+        const sound = audioPool[currentPlaying];
+        if (sound) {
+          await sound.stopAsync();
+        }
+        setCurrentPlaying(null);
+      } catch (err) {
+        console.error(`Error stopping sound ${currentPlaying}:`, err);
+      }
+    }
+  };
+
+  const saveBellSelection = async () => {
     const chosenOption = bellOptions.find((option) => option.name === tempSelectedBell);
     onBellChange(tempSelectedBell, chosenOption?.sound || null);
     setBellModalVisible(false);
-    if (previewSound) {
-      previewSound.stopAsync();
-      previewSound.unloadAsync();
-      setPreviewSound(null);
-    }
+    await stopCurrentPlayingAudio();
   };
 
   const handleCloseBellModal = async () => {
     setBellModalVisible(false);
-    if (previewSound) {
-      await previewSound.stopAsync();
-      await previewSound.unloadAsync();
-      setPreviewSound(null);
-    }
+    await stopCurrentPlayingAudio();
   };
 
   return (
@@ -121,7 +139,7 @@ const BellSelection: React.FC<BellSelectionProps> = ({
 const styles = StyleSheet.create({
   bodyText: {
     fontSize: 14,
-    color: '#000', // Assuming theme.COLORS.black is '#000'
+    color: '#000',
     textAlign: 'left',
   },
 });

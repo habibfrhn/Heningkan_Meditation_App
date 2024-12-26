@@ -1,6 +1,6 @@
 // ambianceSelection.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
 import AmbianceSelectionModal from './ambianceSelectionModal';
@@ -28,71 +28,89 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
   modalWidth,
   onAmbianceChange,
 }) => {
-  // Ambiance states
-  const [ambianceModalVisible, setAmbianceModalVisible] = useState<boolean>(false);
-  const [tempSelectedAmbiance, setTempSelectedAmbiance] = useState<string>('No Sound');
-  const [previewSound, setPreviewSound] = useState<Audio.Sound | null>(null);
+  const [ambianceModalVisible, setAmbianceModalVisible] = useState(false);
+  const [tempSelectedAmbiance, setTempSelectedAmbiance] = useState('No Sound');
+  const [audioPool, setAudioPool] = useState<{ [key: string]: Audio.Sound | null }>({});
+  const [currentPlaying, setCurrentPlaying] = useState<string | null>(null);
 
-  const handleAmbianceSelection = (option: AmbianceOption) => {
+  // Preload audio on component mount
+  useEffect(() => {
+    const preloadSounds = async () => {
+      const pool: { [key: string]: Audio.Sound | null } = {};
+      for (const option of ambianceOptions) {
+        if (option.sound) {
+          try {
+            const { sound } = await Audio.Sound.createAsync(option.sound);
+            pool[option.name] = sound;
+          } catch (err) {
+            console.error(`Error preloading sound for ${option.name}:`, err);
+            pool[option.name] = null;
+          }
+        }
+      }
+      setAudioPool(pool);
+    };
+
+    preloadSounds();
+
+    // Cleanup on unmount
+    return () => {
+      Object.values(audioPool).forEach(async (sound) => {
+        if (sound) {
+          await sound.unloadAsync();
+        }
+      });
+    };
+  }, [ambianceOptions]);
+
+  const handleAmbianceSelection = async (option: AmbianceOption) => {
+    if (currentPlaying && currentPlaying !== option.name) {
+      await stopCurrentPlayingAudio();
+    }
+
     setTempSelectedAmbiance(option.name);
-    if (option.sound) {
-      playPreviewSound(option.sound);
-    } else if (previewSound) {
-      previewSound.stopAsync();
+
+    if (option.sound && audioPool[option.name]) {
+      playPreviewSound(option.name);
     }
   };
 
-  const playPreviewSound = async (soundAsset: any) => {
-    if (previewSound) {
-      await previewSound.stopAsync();
-      await previewSound.unloadAsync();
-      setPreviewSound(null);
-    }
-
-    if (soundAsset) {
+  const playPreviewSound = async (name: string) => {
+    const sound = audioPool[name];
+    if (sound) {
       try {
-        const { sound: newPreviewSound } = await Audio.Sound.createAsync(soundAsset);
-        setPreviewSound(newPreviewSound);
-        await newPreviewSound.playAsync();
-
-        setTimeout(async () => {
-          if (newPreviewSound) {
-            await newPreviewSound.stopAsync();
-            await newPreviewSound.unloadAsync();
-            setPreviewSound(null);
-          }
-        }, 10000);
-
-        newPreviewSound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            newPreviewSound.unloadAsync();
-            setPreviewSound(null);
-          }
-        });
+        setCurrentPlaying(name);
+        await sound.playAsync();
       } catch (err) {
-        console.error('Error playing ambiance preview sound:', err);
+        console.error(`Error playing sound ${name}:`, err);
       }
     }
   };
 
-  const saveAmbianceSelection = () => {
+  const stopCurrentPlayingAudio = async () => {
+    if (currentPlaying && audioPool[currentPlaying]) {
+      try {
+        const sound = audioPool[currentPlaying];
+        if (sound) {
+          await sound.stopAsync();
+        }
+        setCurrentPlaying(null);
+      } catch (err) {
+        console.error(`Error stopping sound ${currentPlaying}:`, err);
+      }
+    }
+  };
+
+  const saveAmbianceSelection = async () => {
     const chosenOption = ambianceOptions.find((option) => option.name === tempSelectedAmbiance);
     onAmbianceChange(tempSelectedAmbiance, chosenOption?.sound || null);
     setAmbianceModalVisible(false);
-    if (previewSound) {
-      previewSound.stopAsync();
-      previewSound.unloadAsync();
-      setPreviewSound(null);
-    }
+    await stopCurrentPlayingAudio();
   };
 
   const handleCloseAmbianceModal = async () => {
     setAmbianceModalVisible(false);
-    if (previewSound) {
-      await previewSound.stopAsync();
-      await previewSound.unloadAsync();
-      setPreviewSound(null);
-    }
+    await stopCurrentPlayingAudio();
   };
 
   return (
@@ -121,7 +139,7 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
 const styles = StyleSheet.create({
   bodyText: {
     fontSize: 14,
-    color: '#000', // Assuming theme.COLORS.black is '#000'
+    color: '#000',
     textAlign: 'left',
   },
 });
