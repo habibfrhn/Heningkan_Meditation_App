@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import theme from './theme';
+import theme from '../theme';
 
 const CIRCLE_SIZE = 220;
 const STROKE_WIDTH = 13;

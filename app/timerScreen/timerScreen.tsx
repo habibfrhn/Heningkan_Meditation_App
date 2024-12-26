@@ -3,12 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Vibration, Dimensions } from 'react-native';
 import { Audio } from 'expo-av';
 import TimerCircle from './timerCircle';
-import theme from './theme';
-import BellSelection from './bellSelection';
-import AmbianceSelection from './ambianceSelection';
+import theme from '../theme';
+import BellSelection from './bells/bellSelection';
+import AmbianceSelection from './ambiances/ambianceSelection';
 import StartTimerButton from './startTimerButton';
-import TimerDurationSelection from './timerDurationSelection';
-import BellIntervalSelection from './bellIntervalSelection';
+import TimerDurationSelection from './timerDurationSelection/timerDurationSelection';
+import BellIntervalSelection from './bells/bellIntervalSelection';
 
 const { width } = Dimensions.get('window');
 const MODAL_PADDING = 12;
@@ -23,10 +23,11 @@ const TimerScreen: React.FC = () => {
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [selectedBell, setSelectedBell] = useState<string>('Aura Chime');
-  const [bellSound, setBellSound] = useState<any>(require('../assets/audio/bell/bell1.mp3'));
+  const [bellSound, setBellSound] = useState<any>(require('../../assets/audio/bell/bell1.mp3'));
   const [selectedIntervals, setSelectedIntervals] = useState<string[]>([]);
   const [selectedAmbiance, setSelectedAmbiance] = useState<string>('No Sound');
-  const [ambianceSound, setAmbianceSound] = useState<any>(null);
+  const [ambianceSound, setAmbianceSound] = useState<any>(require('../../assets/audio/ambience/rain.mp3'));
+  const [ambianceSoundInstance, setAmbianceSoundInstance] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -37,18 +38,21 @@ const TimerScreen: React.FC = () => {
           const nextTime = prevTime !== null ? prevTime - 1 : null;
 
           if (nextTime !== null) {
+            // Play bell at the beginning
             if (
               selectedIntervals.includes('Beginning') &&
               nextTime === selectedTime * 60 - 1
             ) {
               playBellSound();
             }
+            // Play bell at the middle
             if (
               selectedIntervals.includes('Middle') &&
               nextTime === Math.floor((selectedTime * 60) / 2)
             ) {
               playBellSound();
             }
+            // Play bell at the end
             if (selectedIntervals.includes('End') && nextTime === 0) {
               playBellSound();
             }
@@ -62,15 +66,41 @@ const TimerScreen: React.FC = () => {
       Alert.alert('Meditation Completed');
       playBellSound();
       Vibration.vibrate(VIBRATION_PATTERN);
+      stopAmbianceSound(); // Stop ambiance sound when meditation completes
     }
 
     return () => clearInterval(interval);
-  }, [isPlaying, remainingTime]);
+  }, [isPlaying, remainingTime, selectedIntervals, selectedTime]);
 
+  useEffect(() => {
+    // Preload ambiance sound to eliminate delay
+    const loadAmbianceSound = async () => {
+      if (ambianceSound) {
+        try {
+          const { sound } = await Audio.Sound.createAsync(ambianceSound, { shouldPlay: false, isLooping: true });
+          setAmbianceSoundInstance(sound);
+        } catch (error) {
+          console.error('Error loading ambiance sound:', error);
+        }
+      }
+    };
+
+    loadAmbianceSound();
+
+    return () => {
+      if (ambianceSoundInstance) {
+        ambianceSoundInstance.unloadAsync().catch((error) => {
+          console.error('Error unloading ambiance sound:', error);
+        });
+      }
+    };
+  }, [ambianceSound]);
+
+  // Function to play bell sound at intervals and completion
   const playBellSound = async () => {
     if (bellSound) {
       try {
-        const { sound: finalBell } = await Audio.Sound.createAsync(bellSound);
+        const { sound: finalBell } = await Audio.Sound.createAsync(bellSound, { shouldPlay: true });
         await finalBell.playAsync();
         finalBell.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -83,31 +113,61 @@ const TimerScreen: React.FC = () => {
     }
   };
 
+  // Function to play ambiance sound when timer starts
+  const playAmbianceSound = async () => {
+    if (ambianceSoundInstance) {
+      try {
+        await ambianceSoundInstance.playAsync();
+      } catch (error) {
+        console.error('Error playing ambiance sound:', error);
+      }
+    }
+  };
+
+  // Function to stop ambiance sound when timer stops or completes
+  const stopAmbianceSound = async () => {
+    if (ambianceSoundInstance) {
+      try {
+        await ambianceSoundInstance.stopAsync();
+        await ambianceSoundInstance.setPositionAsync(0);
+      } catch (error) {
+        console.error('Error stopping ambiance sound:', error);
+      }
+    }
+  };
+
+  // Function to stop and reset the timer
   const stopAndReset = async () => {
     setRemainingTime(null);
     setIsPlaying(false);
+    await stopAmbianceSound(); // Ensure ambiance sound is stopped when timer is reset
   };
 
+  // Handler for changing bell selection
   const handleBellChange = (selectedBellName: string, selectedBellSound: any) => {
     setSelectedBell(selectedBellName);
     setBellSound(selectedBellSound);
   };
 
+  // Handler for changing bell intervals
   const handleIntervalChange = (intervals: string[]) => {
     setSelectedIntervals(intervals);
   };
 
+  // Handler for changing ambiance selection
   const handleAmbianceChange = (selectedAmbianceName: string, selectedAmbianceSound: any) => {
     setSelectedAmbiance(selectedAmbianceName);
     setAmbianceSound(selectedAmbianceSound);
   };
 
+  // Handler for start/stop button press
   const handleStartStopPress = () => {
     if (isPlaying) {
       stopAndReset();
     } else {
       setRemainingTime(selectedTime * 60);
       setIsPlaying(true);
+      playAmbianceSound(); // Play ambiance sound when timer starts
     }
   };
 
@@ -133,9 +193,9 @@ const TimerScreen: React.FC = () => {
           <BellSelection
             bellOptions={[
               { name: 'No Sound', sound: null },
-              { name: 'Aura Chime', sound: require('../assets/audio/bell/bell1.mp3') },
-              { name: 'Zen Whisper', sound: require('../assets/audio/bell/bell2.mp3') },
-              { name: 'Celestial Ring', sound: require('../assets/audio/bell/bell3.mp3') },
+              { name: 'Aura Chime', sound: require('../../assets/audio/bell/bell1.mp3') },
+              { name: 'Zen Whisper', sound: require('../../assets/audio/bell/bell2.mp3') },
+              { name: 'Celestial Ring', sound: require('../../assets/audio/bell/bell3.mp3') },
             ]}
             BOX_SIZE={BOX_SIZE}
             BOX_MARGIN={BOX_MARGIN}
@@ -161,9 +221,9 @@ const TimerScreen: React.FC = () => {
           <AmbianceSelection
             ambianceOptions={[
               { name: 'No Sound', sound: null },
-              { name: 'Rain', sound: require('../assets/audio/ambience/rain.mp3') },
-              { name: 'Campfire', sound: require('../assets/audio/ambience/campfire.mp3') },
-              { name: 'Wind Chimes', sound: require('../assets/audio/ambience/windChimes.mp3') },
+              { name: 'Rain', sound: require('../../assets/audio/ambience/rain.mp3') },
+              { name: 'Campfire', sound: require('../../assets/audio/ambience/campfire.mp3') },
+              { name: 'Wind Chimes', sound: require('../../assets/audio/ambience/windChimes.mp3') },
             ]}
             BOX_SIZE={BOX_SIZE}
             BOX_MARGIN={BOX_MARGIN}

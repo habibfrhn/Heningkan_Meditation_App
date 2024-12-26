@@ -5,9 +5,14 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "paths": {
-      "@/*": ["app/*"]
+      "@/*": [
+        "app/*"
+      ]
     },
-    "typeRoots": ["./node_modules/@types", "./typings"]
+    "typeRoots": [
+      "./node_modules/@types",
+      "./typings"
+    ]
   },
   "include": [
     "app/**/*.ts",

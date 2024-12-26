@@ -1,7 +1,7 @@
 // File: StartTimerButton.tsx
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import theme from './theme';
+import theme from '../theme';
 
 interface StartTimerButtonProps {
   isPlaying: boolean;

@@ -10,7 +10,7 @@ import {
   FlatList,
   Vibration,
 } from 'react-native';
-import { COLORS } from './theme';
+import { COLORS } from '../../theme';
 
 interface DurationOption {
   label: string;

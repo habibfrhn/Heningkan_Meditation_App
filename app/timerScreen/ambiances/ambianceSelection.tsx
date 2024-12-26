@@ -1,11 +1,8 @@
-// ambianceSelection.tsx
-
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
 import AmbianceSelectionModal from './ambianceSelectionModal';
 
-/* ----------------------------------- TYPES ----------------------------------- */
 interface AmbianceOption {
   name: string;
   sound: any;
@@ -33,7 +30,6 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
   const [audioPool, setAudioPool] = useState<{ [key: string]: Audio.Sound | null }>({});
   const [currentPlaying, setCurrentPlaying] = useState<string | null>(null);
 
-  // Preload audio on component mount
   useEffect(() => {
     const preloadSounds = async () => {
       const pool: { [key: string]: Audio.Sound | null } = {};
@@ -42,8 +38,7 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
           try {
             const { sound } = await Audio.Sound.createAsync(option.sound);
             pool[option.name] = sound;
-          } catch (err) {
-            console.error(`Error preloading sound for ${option.name}:`, err);
+          } catch {
             pool[option.name] = null;
           }
         }
@@ -52,72 +47,57 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
     };
 
     preloadSounds();
-
-    // Cleanup on unmount
     return () => {
       Object.values(audioPool).forEach(async (sound) => {
-        if (sound) {
-          await sound.unloadAsync();
-        }
+        if (sound) await sound.unloadAsync();
       });
     };
   }, [ambianceOptions]);
 
-  const handleAmbianceSelection = async (option: AmbianceOption) => {
-    if (currentPlaying && currentPlaying !== option.name) {
-      await stopCurrentPlayingAudio();
-    }
-
-    setTempSelectedAmbiance(option.name);
-
-    if (option.sound && audioPool[option.name]) {
-      playPreviewSound(option.name);
-    }
-  };
-
   const playPreviewSound = async (name: string) => {
+    if (currentPlaying && audioPool[currentPlaying]) {
+      await audioPool[currentPlaying]?.stopAsync();
+    }
     const sound = audioPool[name];
     if (sound) {
       try {
+        await sound.replayAsync();
         setCurrentPlaying(name);
-        await sound.playAsync();
-      } catch (err) {
-        console.error(`Error playing sound ${name}:`, err);
+      } catch {
+        setCurrentPlaying(null);
       }
     }
   };
 
-  const stopCurrentPlayingAudio = async () => {
+  const stopAllAudio = async () => {
     if (currentPlaying && audioPool[currentPlaying]) {
-      try {
-        const sound = audioPool[currentPlaying];
-        if (sound) {
-          await sound.stopAsync();
-        }
-        setCurrentPlaying(null);
-      } catch (err) {
-        console.error(`Error stopping sound ${currentPlaying}:`, err);
-      }
+      await audioPool[currentPlaying]?.stopAsync();
+    }
+    setCurrentPlaying(null);
+  };
+
+  const handleAmbianceSelection = async (option: AmbianceOption) => {
+    setTempSelectedAmbiance(option.name);
+    if (option.sound) {
+      await playPreviewSound(option.name);
     }
   };
 
   const saveAmbianceSelection = async () => {
     const chosenOption = ambianceOptions.find((option) => option.name === tempSelectedAmbiance);
     onAmbianceChange(tempSelectedAmbiance, chosenOption?.sound || null);
+    await stopAllAudio();
     setAmbianceModalVisible(false);
-    await stopCurrentPlayingAudio();
-  };
-
-  const handleCloseAmbianceModal = async () => {
-    setAmbianceModalVisible(false);
-    await stopCurrentPlayingAudio();
   };
 
   return (
     <>
       <AmbianceSelectionModal
         visible={ambianceModalVisible}
-        onCloseModal={handleCloseAmbianceModal}
+        onCloseModal={async () => {
+          await stopAllAudio();
+          setAmbianceModalVisible(false);
+        }}
         ambianceOptions={ambianceOptions}
         tempSelectedAmbiance={tempSelectedAmbiance}
         onAmbianceSelect={handleAmbianceSelection}
@@ -127,7 +107,6 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
         MODAL_PADDING={MODAL_PADDING}
         modalWidth={modalWidth}
       />
-
       <TouchableOpacity onPress={() => setAmbianceModalVisible(true)}>
         <Text style={styles.bodyText}>{tempSelectedAmbiance}</Text>
       </TouchableOpacity>
@@ -135,13 +114,8 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
   );
 };
 
-/* ---------------------- STYLES ---------------------- */
 const styles = StyleSheet.create({
-  bodyText: {
-    fontSize: 14,
-    color: '#000',
-    textAlign: 'left',
-  },
+  bodyText: { fontSize: 14, color: '#000', textAlign: 'left' },
 });
 
 export default AmbianceSelection;

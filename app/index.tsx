@@ -78,7 +78,7 @@ export default function HomeScreen(): JSX.Element {
           />
           <SectionBox
             title="Meditasi."
-            onPress={() => router.push('/timerScreen')}
+            onPress={() => router.push('../timerScreen/timerScreen')}
             customStyle={{
               flex: 1,
               marginLeft: 5,

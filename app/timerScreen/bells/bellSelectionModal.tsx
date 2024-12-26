@@ -8,20 +8,20 @@ import {
   TouchableWithoutFeedback,
   Vibration,
 } from 'react-native';
-import theme from './theme';
+import theme from '../../theme';
 
 /* ----------------------------------- TYPES ----------------------------------- */
-interface AmbianceOption {
+interface BellOption {
   name: string;
   sound: any;
 }
 
-interface AmbianceSelectionModalProps {
+interface BellSelectionModalProps {
   visible: boolean;
   onCloseModal: () => void;
-  ambianceOptions: AmbianceOption[];
-  tempSelectedAmbiance: string;
-  onAmbianceSelect: (option: AmbianceOption) => void;
+  bellOptions: BellOption[];
+  tempSelectedBell: string;
+  onBellSelect: (option: BellOption) => void;
   onSave: () => void;
   BOX_SIZE: number;
   BOX_MARGIN: number;
@@ -29,26 +29,21 @@ interface AmbianceSelectionModalProps {
   modalWidth: number;
 }
 
-const AmbianceSelectionModal: React.FC<AmbianceSelectionModalProps> = ({
+const BellSelectionModal: React.FC<BellSelectionModalProps> = ({
   visible,
   onCloseModal,
-  ambianceOptions,
-  tempSelectedAmbiance,
-  onAmbianceSelect,
+  bellOptions,
+  tempSelectedBell,
+  onBellSelect,
   onSave,
   BOX_SIZE,
   BOX_MARGIN,
   MODAL_PADDING,
   modalWidth,
 }) => {
-  const handleBoxPress = (option: AmbianceOption) => {
-    Vibration.vibrate(50); // Vibrates for 50 milliseconds when an ambiance option is clicked
-    onAmbianceSelect(option);
-  };
-
-  const handleSavePress = () => {
-    Vibration.vibrate(100); // Vibrates for 100 milliseconds when Save is clicked
-    onSave();
+  const handleBoxPress = (option: BellOption) => {
+    Vibration.vibrate(50); // Provide haptic feedback
+    onBellSelect(option); // Notify parent of selection
   };
 
   return (
@@ -61,57 +56,22 @@ const AmbianceSelectionModal: React.FC<AmbianceSelectionModalProps> = ({
       <TouchableWithoutFeedback onPress={onCloseModal}>
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
-            <View style={[styles.modalContent, { padding: MODAL_PADDING, width: '90%' }]}>
+            <View style={[styles.modalContent, { padding: MODAL_PADDING, width: modalWidth }]}>
               <View style={[styles.modalGrid, { marginBottom: BOX_MARGIN }]}>
-                <View style={[styles.modalRow, { marginBottom: BOX_MARGIN }]}>
+                {bellOptions.map((option, idx) => (
                   <TouchableOpacity
+                    key={idx}
                     style={[
                       styles.modalOption,
                       { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[0]?.name && styles.activeModalOption,
+                      tempSelectedBell === option.name && styles.activeModalOption,
                     ]}
-                    onPress={() => handleBoxPress(ambianceOptions[0])}
+                    onPress={() => handleBoxPress(option)}
                   >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[0]?.name}</Text>
+                    <Text style={styles.modalOptionText}>{option.name}</Text>
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.modalOption,
-                      { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[1]?.name && styles.activeModalOption,
-                    ]}
-                    onPress={() => handleBoxPress(ambianceOptions[1])}
-                  >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[1]?.name}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={[styles.modalRow, { marginBottom: BOX_MARGIN }]}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalOption,
-                      { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[2]?.name && styles.activeModalOption,
-                    ]}
-                    onPress={() => handleBoxPress(ambianceOptions[2])}
-                  >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[2]?.name}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.modalOption,
-                      { width: BOX_SIZE, height: BOX_SIZE },
-                      tempSelectedAmbiance === ambianceOptions[3]?.name && styles.activeModalOption,
-                    ]}
-                    onPress={() => handleBoxPress(ambianceOptions[3])}
-                  >
-                    <Text style={styles.modalOptionText}>{ambianceOptions[3]?.name}</Text>
-                  </TouchableOpacity>
-                </View>
+                ))}
               </View>
-
               <View style={[styles.buttonContainer, { marginTop: BOX_MARGIN / 2 }]}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -121,7 +81,7 @@ const AmbianceSelectionModal: React.FC<AmbianceSelectionModalProps> = ({
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.saveButton}
-                  onPress={handleSavePress}
+                  onPress={onSave}
                 >
                   <Text style={styles.saveButtonText}>Save</Text>
                 </TouchableOpacity>
@@ -146,9 +106,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.COLORS.white,
     borderRadius: 10,
   },
-  modalGrid: {},
-  modalRow: {
+  modalGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   modalOption: {
@@ -156,6 +116,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
   },
   activeModalOption: {
     borderWidth: 2,
@@ -196,4 +157,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AmbianceSelectionModal;
+export default BellSelectionModal;

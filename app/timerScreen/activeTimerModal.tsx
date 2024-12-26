@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Audio } from 'expo-av';
-import theme from './theme';
+import theme from '../theme';
 
 interface ActiveTimerModalProps {
   duration: number;
