@@ -4,11 +4,11 @@ import { View, Text, StyleSheet, Alert, Vibration, Dimensions } from 'react-nati
 import { Audio } from 'expo-av';
 import TimerCircle from './timerCircle';
 import theme from '../theme';
-import BellSelection from './bells/bellSelection';
-import AmbianceSelection from './ambiances/ambianceSelection';
+import BellSelection from './bellSelection';
+import AmbianceSelection from './ambianceSelection';
 import StartTimerButton from './startTimerButton';
-import TimerDurationSelection from './timerDurationSelection/timerDurationSelection';
-import BellIntervalSelection from './bells/bellIntervalSelection';
+import TimerDurationSelection from './timerDurationSelection';
+import BellIntervalSelection from './bellIntervalSelection';
 
 const { width } = Dimensions.get('window');
 const MODAL_PADDING = 12;
