@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Vibration,
 } from 'react-native';
-import { Audio } from 'expo-av';
-import theme from '../theme'; // Adjust this import path as per your project structure
+import theme from '../theme';
+import { useAudioManager } from '../audioManager'; // <-- Import your AudioManager hook
 
 interface BellOption {
-  name: string;
-  sound: any;
+  name: string; // We only need the name now (no direct sound references)
 }
 
 interface BellSelectionProps {
@@ -35,65 +33,64 @@ const BellSelection: React.FC<BellSelectionProps> = ({
 }) => {
   const [bellModalVisible, setBellModalVisible] = useState(false);
   const [tempSelectedBell, setTempSelectedBell] = useState('Aura Chime');
-  const [audioPool, setAudioPool] = useState<{ [key: string]: Audio.Sound | null }>({});
   const [currentPlaying, setCurrentPlaying] = useState<string | null>(null);
 
-  useEffect(() => {
-    const preloadSounds = async () => {
-      const pool: { [key: string]: Audio.Sound | null } = {};
-      for (const option of bellOptions) {
-        if (option.sound) {
-          try {
-            const { sound } = await Audio.Sound.createAsync(option.sound);
-            pool[option.name] = sound;
-          } catch {
-            pool[option.name] = null;
-          }
-        }
-      }
-      setAudioPool(pool);
-    };
+  // Access the preloaded bell sounds from the AudioManager
+  const { preloadedBells } = useAudioManager();
 
-    preloadSounds();
-    return () => {
-      Object.values(audioPool).forEach(async (sound) => {
-        if (sound) await sound.unloadAsync();
-      });
-    };
-  }, [bellOptions]);
-
-  const playPreviewSound = async (name: string) => {
-    if (currentPlaying && audioPool[currentPlaying]) {
-      await audioPool[currentPlaying]?.stopAsync();
-    }
-    const sound = audioPool[name];
-    if (sound) {
+  /**
+   * Stop the currently playing bell (if any).
+   */
+  const stopAllAudio = async () => {
+    if (currentPlaying && preloadedBells[currentPlaying]) {
       try {
-        await sound.replayAsync();
-        setCurrentPlaying(name);
-      } catch {
+        await preloadedBells[currentPlaying].stopAsync();
+        await preloadedBells[currentPlaying].setPositionAsync(0);
+      } catch (err) {
+        console.warn('Error stopping audio:', err);
+      }
+    }
+    setCurrentPlaying(null);
+  };
+
+  /**
+   * Play preview sound for a selected bell.
+   */
+  const playPreviewSound = async (bellName: string) => {
+    // Stop the currently playing sound first
+    await stopAllAudio();
+
+    const soundObject = preloadedBells[bellName];
+    if (soundObject) {
+      try {
+        // Rewind and play
+        await soundObject.stopAsync();
+        await soundObject.setPositionAsync(0);
+        await soundObject.playAsync();
+        setCurrentPlaying(bellName);
+      } catch (err) {
+        console.error('Error playing preview sound:', err);
         setCurrentPlaying(null);
       }
     }
   };
 
-  const stopAllAudio = async () => {
-    if (currentPlaying && audioPool[currentPlaying]) {
-      await audioPool[currentPlaying]?.stopAsync();
-    }
-    setCurrentPlaying(null);
+  /**
+   * User clicks on a bell option to preview it.
+   */
+  const handleBellSelection = async (optionName: string) => {
+    setTempSelectedBell(optionName);
+    await playPreviewSound(optionName);
   };
 
-  const handleBellSelection = async (option: BellOption) => {
-    setTempSelectedBell(option.name);
-    if (option.sound) {
-      await playPreviewSound(option.name);
-    }
-  };
-
+  /**
+   * Save the currently selected bell and notify parent via `onBellChange`.
+   */
   const saveBellSelection = async () => {
-    const chosenOption = bellOptions.find((option) => option.name === tempSelectedBell);
-    onBellChange(tempSelectedBell, chosenOption?.sound || null);
+    // We pass the *string* name and the associated preloaded sound object
+    const selectedSound = preloadedBells[tempSelectedBell] || null;
+    onBellChange(tempSelectedBell, selectedSound);
+
     await stopAllAudio();
     setBellModalVisible(false);
   };
@@ -109,13 +106,20 @@ const BellSelection: React.FC<BellSelectionProps> = ({
           setBellModalVisible(false);
         }}
       >
-        <TouchableWithoutFeedback onPress={async () => {
-          await stopAllAudio();
-          setBellModalVisible(false);
-        }}>
+        <TouchableWithoutFeedback
+          onPress={async () => {
+            await stopAllAudio();
+            setBellModalVisible(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
-              <View style={[styles.modalContent, { padding: MODAL_PADDING, width: modalWidth }]}>
+              <View
+                style={[
+                  styles.modalContent,
+                  { padding: MODAL_PADDING, width: modalWidth },
+                ]}
+              >
                 <View style={[styles.modalGrid, { marginBottom: BOX_MARGIN }]}>
                   {bellOptions.map((option, idx) => (
                     <TouchableOpacity
@@ -125,7 +129,7 @@ const BellSelection: React.FC<BellSelectionProps> = ({
                         { width: BOX_SIZE, height: BOX_SIZE },
                         tempSelectedBell === option.name && styles.activeModalOption,
                       ]}
-                      onPress={() => handleBellSelection(option)}
+                      onPress={() => handleBellSelection(option.name)}
                     >
                       <Text style={styles.modalOptionText}>{option.name}</Text>
                     </TouchableOpacity>
@@ -141,10 +145,7 @@ const BellSelection: React.FC<BellSelectionProps> = ({
                   >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={saveBellSelection}
-                  >
+                  <TouchableOpacity style={styles.saveButton} onPress={saveBellSelection}>
                     <Text style={styles.saveButtonText}>Save</Text>
                   </TouchableOpacity>
                 </View>
@@ -220,7 +221,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
-  bodyText: { fontSize: 14, color: '#000', textAlign: 'left' },
+  bodyText: {
+    fontSize: 14,
+    color: '#000',
+    textAlign: 'left',
+  },
 });
 
 export default BellSelection;

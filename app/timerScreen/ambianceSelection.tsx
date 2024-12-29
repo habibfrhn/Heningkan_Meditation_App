@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Vibration,
 } from 'react-native';
-import { Audio } from 'expo-av';
-import theme from '../theme'; // Adjust the path based on your project structure
+import theme from '../theme';
+import { useAudioManager } from '../audioManager'; // <-- Import your AudioManager hook
 
 interface AmbianceOption {
-  name: string;
-  sound: any;
+  name: string; // We only need the name now
 }
 
 interface AmbianceSelectionProps {
@@ -35,65 +33,62 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
 }) => {
   const [ambianceModalVisible, setAmbianceModalVisible] = useState(false);
   const [tempSelectedAmbiance, setTempSelectedAmbiance] = useState('No Sound');
-  const [audioPool, setAudioPool] = useState<{ [key: string]: Audio.Sound | null }>({});
   const [currentPlaying, setCurrentPlaying] = useState<string | null>(null);
 
-  useEffect(() => {
-    const preloadSounds = async () => {
-      const pool: { [key: string]: Audio.Sound | null } = {};
-      for (const option of ambianceOptions) {
-        if (option.sound) {
-          try {
-            const { sound } = await Audio.Sound.createAsync(option.sound);
-            pool[option.name] = sound;
-          } catch {
-            pool[option.name] = null;
-          }
-        }
-      }
-      setAudioPool(pool);
-    };
+  // Access the preloaded ambiance sounds from the AudioManager
+  const { preloadedAmbiance } = useAudioManager();
 
-    preloadSounds();
-    return () => {
-      Object.values(audioPool).forEach(async (sound) => {
-        if (sound) await sound.unloadAsync();
-      });
-    };
-  }, [ambianceOptions]);
-
-  const playPreviewSound = async (name: string) => {
-    if (currentPlaying && audioPool[currentPlaying]) {
-      await audioPool[currentPlaying]?.stopAsync();
-    }
-    const sound = audioPool[name];
-    if (sound) {
+  /**
+   * Stop any currently playing ambiance preview.
+   */
+  const stopAllAudio = async () => {
+    if (currentPlaying && preloadedAmbiance[currentPlaying]) {
       try {
-        await sound.replayAsync();
-        setCurrentPlaying(name);
-      } catch {
+        await preloadedAmbiance[currentPlaying].stopAsync();
+        await preloadedAmbiance[currentPlaying].setPositionAsync(0);
+      } catch (err) {
+        console.warn('Error stopping ambiance audio:', err);
+      }
+    }
+    setCurrentPlaying(null);
+  };
+
+  /**
+   * Play preview for the selected ambiance sound.
+   */
+  const playPreviewSound = async (ambName: string) => {
+    // Stop any currently playing preview
+    await stopAllAudio();
+
+    const soundObject = preloadedAmbiance[ambName];
+    if (soundObject) {
+      try {
+        await soundObject.stopAsync();
+        await soundObject.setPositionAsync(0);
+        await soundObject.playAsync();
+        setCurrentPlaying(ambName);
+      } catch (err) {
+        console.error('Error playing ambiance preview:', err);
         setCurrentPlaying(null);
       }
     }
   };
 
-  const stopAllAudio = async () => {
-    if (currentPlaying && audioPool[currentPlaying]) {
-      await audioPool[currentPlaying]?.stopAsync();
-    }
-    setCurrentPlaying(null);
+  /**
+   * Select an ambiance, preview it.
+   */
+  const handleAmbianceSelection = async (optionName: string) => {
+    setTempSelectedAmbiance(optionName);
+    await playPreviewSound(optionName);
   };
 
-  const handleAmbianceSelection = async (option: AmbianceOption) => {
-    setTempSelectedAmbiance(option.name);
-    if (option.sound) {
-      await playPreviewSound(option.name);
-    }
-  };
-
+  /**
+   * Save the selection and notify parent with the selected ambiance sound.
+   */
   const saveAmbianceSelection = async () => {
-    const chosenOption = ambianceOptions.find((option) => option.name === tempSelectedAmbiance);
-    onAmbianceChange(tempSelectedAmbiance, chosenOption?.sound || null);
+    const selectedSound = preloadedAmbiance[tempSelectedAmbiance] || null;
+    onAmbianceChange(tempSelectedAmbiance, selectedSound);
+
     await stopAllAudio();
     setAmbianceModalVisible(false);
   };
@@ -109,13 +104,20 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
           setAmbianceModalVisible(false);
         }}
       >
-        <TouchableWithoutFeedback onPress={async () => {
-          await stopAllAudio();
-          setAmbianceModalVisible(false);
-        }}>
+        <TouchableWithoutFeedback
+          onPress={async () => {
+            await stopAllAudio();
+            setAmbianceModalVisible(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
-              <View style={[styles.modalContent, { padding: MODAL_PADDING, width: modalWidth }]}>
+              <View
+                style={[
+                  styles.modalContent,
+                  { padding: MODAL_PADDING, width: modalWidth },
+                ]}
+              >
                 <View style={[styles.modalGrid, { marginBottom: BOX_MARGIN }]}>
                   {ambianceOptions.map((option, idx) => (
                     <TouchableOpacity
@@ -125,7 +127,7 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
                         { width: BOX_SIZE, height: BOX_SIZE },
                         tempSelectedAmbiance === option.name && styles.activeModalOption,
                       ]}
-                      onPress={() => handleAmbianceSelection(option)}
+                      onPress={() => handleAmbianceSelection(option.name)}
                     >
                       <Text style={styles.modalOptionText}>{option.name}</Text>
                     </TouchableOpacity>
@@ -141,10 +143,7 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
                   >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={saveAmbianceSelection}
-                  >
+                  <TouchableOpacity style={styles.saveButton} onPress={saveAmbianceSelection}>
                     <Text style={styles.saveButtonText}>Save</Text>
                   </TouchableOpacity>
                 </View>
@@ -153,6 +152,7 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
       <TouchableOpacity onPress={() => setAmbianceModalVisible(true)}>
         <Text style={styles.bodyText}>{tempSelectedAmbiance}</Text>
       </TouchableOpacity>
@@ -161,18 +161,70 @@ const AmbianceSelection: React.FC<AmbianceSelectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  modalContent: { backgroundColor: theme.COLORS.white, borderRadius: 10 },
-  modalGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  modalOption: { borderRadius: 10, backgroundColor: theme.COLORS.background, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  activeModalOption: { borderWidth: 2, borderColor: theme.COLORS.primary },
-  modalOptionText: { fontSize: 16, color: theme.COLORS.black },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
-  cancelButton: { backgroundColor: 'transparent', padding: 10, borderRadius: 8, flex: 1, marginRight: 10 },
-  cancelButtonText: { color: theme.COLORS.black, textAlign: 'center', fontWeight: 'bold' },
-  saveButton: { backgroundColor: theme.COLORS.primary, padding: 10, borderRadius: 8, flex: 1, marginLeft: 10 },
-  saveButtonText: { color: theme.COLORS.white, textAlign: 'center', fontWeight: 'bold' },
-  bodyText: { fontSize: 14, color: '#000', textAlign: 'left' },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: theme.COLORS.white,
+    borderRadius: 10,
+  },
+  modalGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  modalOption: {
+    borderRadius: 10,
+    backgroundColor: theme.COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  activeModalOption: {
+    borderWidth: 2,
+    borderColor: theme.COLORS.primary,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: theme.COLORS.black,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  cancelButton: {
+    backgroundColor: 'transparent',
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: theme.COLORS.black,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  saveButton: {
+    backgroundColor: theme.COLORS.primary,
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 10,
+  },
+  saveButtonText: {
+    color: theme.COLORS.white,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  bodyText: {
+    fontSize: 14,
+    color: '#000',
+    textAlign: 'left',
+  },
 });
 
 export default AmbianceSelection;
