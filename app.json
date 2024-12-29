@@ -4,7 +4,7 @@
     "slug": "Heningkan_Meditation_App",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logoLightGreen.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -22,17 +22,14 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "splash": {
+      "splash.image": "./assets/images/logoLightGreen.png",
+      "backgroundColor": "#ffffff",
+      "resizeMode": "contain"
+    },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
+      "expo-splash-screen",
       "expo-font"
     ],
     "experiments": {
