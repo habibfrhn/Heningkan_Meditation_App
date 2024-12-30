@@ -35,8 +35,8 @@ const TimerCircle: React.FC<TimerCircleProps> = ({ selectedTime, maxDuration }) 
       />
     </Svg>
     <View style={styles.innerCircle}>
-      <Text style={styles.textSmall}>Your timer is set to</Text>
-      <Text style={styles.textLarge}>{Math.round(selectedTime)} min</Text>
+      <Text style={styles.textSmall}>Timer anda diatur ke</Text>
+      <Text style={styles.textLarge}>{Math.round(selectedTime)} m</Text>
     </View>
   </View>
 );

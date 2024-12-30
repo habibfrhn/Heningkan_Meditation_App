@@ -5,10 +5,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
+  TouchableWithoutFeedback,
   Vibration,
 } from 'react-native';
-import { COLORS } from '../theme'; // Adjust this import as per your project structure
+import { COLORS } from '../theme';
 
 interface TimerDurationSelectionProps {
   BOX_SIZE: number;
@@ -16,11 +16,6 @@ interface TimerDurationSelectionProps {
   MODAL_PADDING: number;
   modalWidth: number;
   onDurationChange: (selectedDuration: number) => void;
-}
-
-interface DurationOption {
-  label: string;
-  value: number;
 }
 
 const TimerDurationSelection: React.FC<TimerDurationSelectionProps> = ({
@@ -33,7 +28,7 @@ const TimerDurationSelection: React.FC<TimerDurationSelectionProps> = ({
   const [durationModalVisible, setDurationModalVisible] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState(5);
 
-  const durationOptions: DurationOption[] = [
+  const durationOptions = [
     { label: '5 menit', value: 5 },
     { label: '10 menit', value: 10 },
     { label: '15 menit', value: 15 },
@@ -47,9 +42,9 @@ const TimerDurationSelection: React.FC<TimerDurationSelectionProps> = ({
     setDurationModalVisible(false);
   };
 
-  const handleBoxPress = (item: DurationOption) => {
+  const handleBoxPress = (value: number) => {
     Vibration.vibrate(50);
-    setSelectedDuration(item.value);
+    setSelectedDuration(value);
   };
 
   return (
@@ -60,78 +55,56 @@ const TimerDurationSelection: React.FC<TimerDurationSelectionProps> = ({
         animationType="slide"
         onRequestClose={() => setDurationModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContainer,
-              {
-                width: modalWidth,
-                padding: MODAL_PADDING,
-              },
-            ]}
-          >
-            <FlatList
-              data={durationOptions}
-              keyExtractor={(item) => item.value.toString()}
-              numColumns={2}
-              contentContainerStyle={styles.flatListContainer}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.optionBox,
-                    {
-                      width: BOX_SIZE,
-                      height: BOX_SIZE,
-                      margin: BOX_MARGIN / 2,
-                      backgroundColor:
-                        item.value === selectedDuration
-                          ? COLORS.primary
-                          : COLORS.background,
-                    },
-                  ]}
-                  onPress={() => handleBoxPress(item)}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      {
-                        color:
-                          item.value === selectedDuration
-                            ? COLORS.white
-                            : COLORS.black,
-                      },
-                    ]}
+        <TouchableWithoutFeedback onPress={() => setDurationModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.modalContent,
+                  { width: modalWidth, padding: MODAL_PADDING },
+                ]}
+              >
+                <View style={[styles.modalGrid, { marginBottom: BOX_MARGIN }]}>
+                  {durationOptions.map((option) => {
+                    const isSelected = option.value === selectedDuration;
+                    return (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.modalOption,
+                          { width: BOX_SIZE, height: BOX_SIZE },
+                          isSelected && styles.activeModalOption,
+                        ]}
+                        onPress={() => handleBoxPress(option.value)}
+                      >
+                        <Text style={styles.modalOptionText}>{option.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <View style={[styles.buttonContainer, { marginTop: BOX_MARGIN / 2 }]}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setDurationModalVisible(false)}
                   >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setDurationModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={() => {
-                  Vibration.vibrate(50);
-                  saveDurationSelection();
-                }}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={saveDurationSelection}
+                  >
+                    <Text style={styles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
+
       <TouchableOpacity onPress={() => setDurationModalVisible(true)}>
-        <View style={styles.rowContainer}>
-          <Text style={styles.labelText}>Timer Duration</Text>
-          <Text style={styles.bodyText}>{selectedDuration} menit</Text>
-        </View>
+        <Text style={styles.bodyText}>{selectedDuration} menit</Text>
       </TouchableOpacity>
     </>
   );
@@ -140,43 +113,38 @@ const TimerDurationSelection: React.FC<TimerDurationSelectionProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContainer: {
+  modalContent: {
     backgroundColor: COLORS.white,
     borderRadius: 10,
-    padding: 20,
   },
-  flatListContainer: {
-    alignItems: 'center',
+  modalGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  modalOption: {
+    borderRadius: 10,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
-  },
-  optionBox: {
-    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    marginBottom: 10,
   },
-  optionText: {
+  activeModalOption: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  modalOptionText: {
     fontSize: 16,
+    color: COLORS.black,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    padding: 10,
-    borderRadius: 8,
-    flex: 1,
-    marginLeft: 10,
-  },
-  saveButtonText: {
-    color: COLORS.white,
-    textAlign: 'center',
-    fontWeight: 'bold',
   },
   cancelButton: {
     backgroundColor: 'transparent',
@@ -186,28 +154,26 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   cancelButtonText: {
-    color: COLORS.black,
     textAlign: 'center',
     fontWeight: 'bold',
+    color: COLORS.black,
   },
-  rowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    paddingVertical: 10,
-  },
-  labelText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
+  saveButton: {
+    backgroundColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 8,
     flex: 1,
+    marginLeft: 10,
+  },
+  saveButtonText: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    color: COLORS.white,
   },
   bodyText: {
     fontSize: 14,
     color: '#000',
-    textAlign: 'right',
-    flex: 1,
+    textAlign: 'left',
   },
 });
 

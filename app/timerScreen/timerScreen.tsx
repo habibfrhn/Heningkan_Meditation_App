@@ -53,9 +53,12 @@ const TimerScreen: React.FC = () => {
     selectedDuration,
   }) => {
     return (
-      <TouchableOpacity style={styles.startButton} onPress={onPress}>
+      <TouchableOpacity
+        style={[styles.startButton, { backgroundColor: theme.COLORS.primary }]}
+        onPress={onPress}
+      >
         <Text style={styles.startButtonText}>
-          {isPlaying ? 'Stop' : `Start ${selectedDuration / 60} min`}
+          {isPlaying ? 'Stop' : 'Mulai timer'}
         </Text>
       </TouchableOpacity>
     );
@@ -86,8 +89,8 @@ const TimerScreen: React.FC = () => {
         <TimerCircle selectedTime={selectedTime} maxDuration={60} />
       </View>
 
-      {/* TimerDurationSelection */}
-      <View style={styles.durationSelectionSection}>
+      <View style={styles.audioContainer}>
+        <Text style={styles.sectionTitle}>Durasi timer</Text>
         <TimerDurationSelection
           BOX_SIZE={BOX_SIZE}
           BOX_MARGIN={BOX_MARGIN}
@@ -101,7 +104,7 @@ const TimerScreen: React.FC = () => {
       <View style={styles.audioSection}>
         {/* Bell Selection */}
         <View style={styles.audioContainer}>
-          <Text style={styles.sectionTitle}>Bell Selection</Text>
+          <Text style={styles.sectionTitle}>Pilihan bel</Text>
           <BellSelection
             bellOptions={[
               { name: 'No Sound' },
@@ -120,7 +123,7 @@ const TimerScreen: React.FC = () => {
 
         {/* Bell Intervals (with special logic in handleIntervalChange) */}
         <View style={styles.audioContainer}>
-          <Text style={styles.sectionTitle}>Bell Intervals</Text>
+          <Text style={styles.sectionTitle}>Interval bel</Text>
           <BellIntervalSelection
             BOX_SIZE={BOX_SIZE}
             BOX_MARGIN={BOX_MARGIN}
@@ -133,7 +136,7 @@ const TimerScreen: React.FC = () => {
 
         {/* Ambient Sound */}
         <View style={styles.audioContainer}>
-          <Text style={styles.sectionTitle}>Ambient Sound</Text>
+          <Text style={styles.sectionTitle}>Suara ambient</Text>
           <AmbianceSelection
             ambianceOptions={[
               { name: 'No Sound' },
@@ -184,7 +187,6 @@ const styles = StyleSheet.create({
     flex: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 10,
   },
   durationSelectionSection: {
     paddingVertical: 20,
@@ -221,7 +223,6 @@ const styles = StyleSheet.create({
   startButton: {
     paddingVertical: 15,
     paddingHorizontal: 40,
-    backgroundColor: '#4A90E2',
     borderRadius: 25,
   },
   startButtonText: {

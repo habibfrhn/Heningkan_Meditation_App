@@ -24,7 +24,7 @@ interface BellIntervalSelectionProps {
  *  - 'Middle'
  *  - 'End'
  */
-const intervalOptions = ['None', 'Beginning', 'Middle', 'End'];
+const intervalOptions = ['None', 'Awal', 'Tengah', 'Akhir'];
 
 const BellIntervalSelection: React.FC<BellIntervalSelectionProps> = ({
   BOX_SIZE,
@@ -34,7 +34,7 @@ const BellIntervalSelection: React.FC<BellIntervalSelectionProps> = ({
   onIntervalChange,
 }) => {
   // Default to ["Beginning"]
-  const [tempSelections, setTempSelections] = useState<string[]>(['Beginning']);
+  const [tempSelections, setTempSelections] = useState<string[]>(['Awal']);
 
   // Controls modal visibility
   const [modalVisible, setModalVisible] = useState(false);
