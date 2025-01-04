@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,13 +17,6 @@ interface BellIntervalSelectionProps {
   onIntervalChange: (selectedIntervals: string[]) => void;
 }
 
-/**
- * We have four options:
- *  - 'None'
- *  - 'Beginning' (default)
- *  - 'Middle'
- *  - 'End'
- */
 const intervalOptions = ['None', 'Awal', 'Tengah', 'Akhir'];
 
 const BellIntervalSelection: React.FC<BellIntervalSelectionProps> = ({
@@ -33,58 +26,42 @@ const BellIntervalSelection: React.FC<BellIntervalSelectionProps> = ({
   modalWidth,
   onIntervalChange,
 }) => {
-  // Default to ["Beginning"]
   const [tempSelections, setTempSelections] = useState<string[]>(['Awal']);
-
-  // Controls modal visibility
   const [modalVisible, setModalVisible] = useState(false);
 
-  /**
-   * User clicks an option:
-   * - If they click 'None', that becomes the *only* selection.
-   * - Otherwise, we remove 'None' if it's in the array, and toggle the chosen interval.
-   */
+  useEffect(() => {
+    // Notify parent of default selection on mount
+    onIntervalChange(['Awal']);
+  }, []);
+
   const handleOptionPress = (option: string) => {
-    // If user chose "None", then that is the only selection
     if (option === 'None') {
       setTempSelections(['None']);
       return;
     }
 
-    // Otherwise, remove "None" if it was previously selected
     let newSelections = tempSelections.filter((item) => item !== 'None');
 
-    // Toggle the chosen option
     if (newSelections.includes(option)) {
-      // Already selected, so unselect it
       newSelections = newSelections.filter((item) => item !== option);
     } else {
-      // Not selected yet, so add it
       newSelections.push(option);
     }
 
-    // If user ends up unselecting everything, we allow an empty array
     setTempSelections(newSelections);
   };
 
-  /**
-   * Save the selected intervals to the parent
-   */
   const saveIntervalSelection = () => {
     onIntervalChange(tempSelections);
     setModalVisible(false);
   };
 
-  /**
-   * Cancel and revert any changes
-   */
   const cancelSelection = () => {
     setModalVisible(false);
   };
 
   return (
     <>
-      {/* MODAL */}
       <Modal
         transparent
         visible={modalVisible}
@@ -119,7 +96,6 @@ const BellIntervalSelection: React.FC<BellIntervalSelectionProps> = ({
                   })}
                 </View>
 
-                {/* Save/Cancel Buttons */}
                 <View style={[styles.buttonContainer, { marginTop: BOX_MARGIN / 2 }]}>
                   <TouchableOpacity
                     style={styles.cancelButton}
@@ -140,15 +116,12 @@ const BellIntervalSelection: React.FC<BellIntervalSelectionProps> = ({
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Pressing this text opens the modal */}
       <TouchableOpacity
         onPress={() => {
           setModalVisible(true);
         }}
       >
         <Text style={styles.bodyText}>
-          {/* Display "None" if it's in the selection, otherwise display selected intervals,
-              or fallback to "Select Intervals" if empty array. */}
           {tempSelections.includes('None')
             ? 'None'
             : tempSelections.length > 0
@@ -161,7 +134,6 @@ const BellIntervalSelection: React.FC<BellIntervalSelectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  // Similar styles to bellSelection
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',

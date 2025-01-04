@@ -32,7 +32,7 @@ const TimerScreen: React.FC = () => {
   const [selectedAmbiance, setSelectedAmbiance] = useState<string>('No Sound');
 
   // The intervals selected by the user. We'll apply special logic if "None" is chosen
-  const [selectedIntervals, setSelectedIntervals] = useState<string[]>([]);
+  const [selectedIntervals, setSelectedIntervals] = useState<string[]>(['Awal']);
 
   // Show/hide the active meditation modal
   const [showActiveModal, setShowActiveModal] = useState(false);

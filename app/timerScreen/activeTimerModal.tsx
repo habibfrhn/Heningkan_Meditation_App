@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import { Audio } from 'expo-av';
 import theme from '../theme';
 
@@ -22,6 +22,12 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
   const [preparationTime, setPreparationTime] = useState(5);
   const [isPaused, setIsPaused] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bellsPlayed, setBellsPlayed] = useState({
+    awal: false,
+    tengah: false,
+    akhir: false,
+  });
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -39,26 +45,31 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
   }, [isPaused, preparationTime, timeLeft]);
 
   useEffect(() => {
-    if (isRunning) {
-      // Handle bells based on intervals
+    if (isRunning && !isPaused) {
       if (!intervals.includes('None')) {
-        if (intervals.includes('Awal')) playBell('Awal');
-        if (intervals.includes('Tengah')) {
-          setTimeout(() => playBell('Tengah'), (duration / 2) * 1000);
+        if (intervals.includes('Awal') && !bellsPlayed.awal) {
+          playBell('Awal');
+          setBellsPlayed((prev) => ({ ...prev, awal: true }));
         }
-        if (intervals.includes('Akhir')) {
-          setTimeout(() => playBell('Akhir'), duration * 1000);
+        if (intervals.includes('Tengah') && !bellsPlayed.tengah) {
+          setTimeout(() => {
+            playBell('Tengah');
+            setBellsPlayed((prev) => ({ ...prev, tengah: true }));
+          }, (duration / 2) * 1000);
+        }
+        if (intervals.includes('Akhir') && !bellsPlayed.akhir) {
+          setTimeout(() => {
+            playBell('Akhir');
+            setBellsPlayed((prev) => ({ ...prev, akhir: true }));
+          }, duration * 1000);
         }
       }
 
-      // Start ambiance looping
       playAmbiance();
-    }
-
-    return () => {
+    } else {
       stopAmbiance();
-    };
-  }, [isRunning]);
+    }
+  }, [isRunning, isPaused]);
 
   const playBell = async (type: string) => {
     try {
@@ -99,8 +110,31 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
   };
 
   const handleStop = () => {
-    stopAmbiance();
-    onClose();
+    setIsPaused(true);
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmStop = (confirm: boolean) => {
+    setShowConfirmation(false);
+    if (confirm) {
+      stopAmbiance();
+      onClose();
+      resetModal();
+    } else {
+      setIsPaused(false);
+    }
+  };
+
+  const resetModal = () => {
+    setTimeLeft(duration);
+    setPreparationTime(5);
+    setIsPaused(false);
+    setIsRunning(false);
+    setBellsPlayed({
+      awal: false,
+      tengah: false,
+      akhir: false,
+    });
   };
 
   const formatTime = (seconds: number): string => {
@@ -120,7 +154,7 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
         <View style={styles.controls}>
           <TouchableOpacity onPress={handlePauseResume} style={styles.controlButton}>
             <Text style={styles.controlButtonText}>
-              {isPaused ? 'Continue' : 'Pause'}
+              {isPaused ? 'Play' : 'Pause'}
             </Text>
           </TouchableOpacity>
 
@@ -129,6 +163,34 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
           </TouchableOpacity>
         </View>
       </View>
+
+      {showConfirmation && (
+        <Modal animationType="fade" transparent visible>
+          <TouchableWithoutFeedback onPress={() => handleConfirmStop(false)}>
+            <View style={styles.overlay}>
+              <View style={styles.confirmBox}>
+                <Text style={styles.confirmText}>
+                  Apakah anda yakin ingin membatalkan sesi meditasi?
+                </Text>
+                <View style={styles.confirmButtons}>
+                  <TouchableOpacity
+                    style={[styles.controlButton, styles.confirmButton]}
+                    onPress={() => handleConfirmStop(true)}
+                  >
+                    <Text style={styles.controlButtonText}>Yes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.controlButton, styles.confirmButton]}
+                    onPress={() => handleConfirmStop(false)}
+                  >
+                    <Text style={styles.controlButtonText}>No</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
     </Modal>
   );
 };
@@ -161,6 +223,32 @@ const styles = StyleSheet.create({
     color: theme.COLORS.white,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmBox: {
+    backgroundColor: theme.COLORS.white,
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    alignItems: 'center',
+  },
+  confirmText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  confirmButton: {
+    marginHorizontal: 10,
   },
 });
 

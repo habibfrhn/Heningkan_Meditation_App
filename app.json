@@ -4,7 +4,7 @@
     "slug": "Heningkan_Meditation_App",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logoLightGreen.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -23,7 +23,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "splash": {
-      "splash.image": "./assets/images/logoLightGreen.png",
+      "splash.image": "./assets/images/logo.png",
       "backgroundColor": "#ffffff",
       "resizeMode": "contain"
     },
