@@ -24,25 +24,49 @@ interface SectionBoxProps {
   title: string;
   onPress: () => void;
   customStyle?: StyleProp<ViewStyle>;
+  backgroundImage?: any; // Optional prop for background image
 }
 
 /**
  * Reusable Section Box Component
  */
-const SectionBox: React.FC<SectionBoxProps> = ({ title, onPress, customStyle }) => (
-  <TouchableOpacity style={[LAYOUT.section, customStyle]} onPress={onPress}>
-    <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>
-      {title}
-    </Text>
-  </TouchableOpacity>
-);
+const SectionBox: React.FC<SectionBoxProps> = ({
+  title,
+  onPress,
+  customStyle,
+  backgroundImage,
+}) => {
+  return (
+    <TouchableOpacity style={[LAYOUT.section, customStyle]} onPress={onPress}>
+      {backgroundImage ? (
+        <ImageBackground
+          source={backgroundImage}
+          style={styles.imageBackground}
+          imageStyle={{ borderRadius: 10 }} // Match the border radius if needed
+        >
+          <View style={styles.contentContainer}>
+            <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>
+              {title}
+            </Text>
+          </View>
+        </ImageBackground>
+      ) : (
+        <View style={styles.contentContainer}>
+          <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>
+            {title}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
 
 /**
  * Props interface for NavigationButton component
  */
 interface NavigationButtonProps {
   label: string;
-  icon: any; // You can replace `any` with a more specific type if needed, e.g., ImageSourcePropType
+  icon: any; // You can replace any with a more specific type if needed, e.g., ImageSourcePropType
   isActive: boolean;
   onPress: () => void;
 }
@@ -50,7 +74,12 @@ interface NavigationButtonProps {
 /**
  * Reusable Navigation Button Component
  */
-const NavigationButton: React.FC<NavigationButtonProps> = ({ label, icon, isActive, onPress }) => (
+const NavigationButton: React.FC<NavigationButtonProps> = ({
+  label,
+  icon,
+  isActive,
+  onPress,
+}) => (
   <TouchableOpacity
     style={[
       styles.navigationButton,
@@ -96,39 +125,46 @@ const HomeScreen: React.FC = () => {
       >
         {/* Greetings Container */}
         <View style={styles.greetingsContainer}>
-          <Text style={[TEXT_STYLES.heading, { textAlign: 'left', color: COLORS.black }]}>
+          <Text
+            style={[
+              TEXT_STYLES.heading,
+              { textAlign: 'left', color: COLORS.black },
+            ]}
+          >
             {greeting}
           </Text>
         </View>
 
         {/* Main Content Container */}
         <View style={styles.mainContentContainer}>
-          {/* Meditasi Box */}
+          {/* Meditasi Box with Background Image */}
           <SectionBox
             title="Meditasi."
             onPress={() => router.push('./timerScreen/timerScreen')} // Updated navigation
             customStyle={LAYOUT.largeSection}
+            backgroundImage={require('../assets/images/meditationBackground.png')} // Added background image
           />
 
           {/* Downward Rectangular Jurnal and Latihan Napas Boxes */}
           <View style={styles.rowSection}>
             <SectionBox
               title="Jurnal."
-              onPress={() => router.push('/jurnalScreen')} // Updated navigation
-              customStyle={styles.jurnalBox} // Updated stylesheet name
+              onPress={() => router.push('/jurnalScreen')}
+              customStyle={styles.jurnalBox}
             />
             <SectionBox
               title="Latihan napas."
-              onPress={() => router.push('/bernapasScreen')} // Updated navigation
-              customStyle={styles.bernapasBox} // Updated stylesheet name
+              onPress={() => router.push('/bernapasScreen')}
+              customStyle={styles.bernapasBox}
             />
           </View>
 
-          {/* Meditasi dengan Panduan Box */}
+          {/* Meditasi dengan Panduan Box (also using LAYOUT.largeSection) */}
           <SectionBox
             title="Meditasi dengan panduan."
             onPress={() => router.push('/panduanMeditasiScreen')}
             customStyle={LAYOUT.largeSection}
+            backgroundImage={require('../assets/images/meditationPanduanBackground.png')}
           />
         </View>
 
@@ -168,20 +204,19 @@ const styles = StyleSheet.create({
   mainContentContainer: {
     flex: 1,
     justifyContent: 'center',
-    // You can add more styling here if needed
   },
   rowSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 10,
   },
-  jurnalBox: { // Updated stylesheet name
+  jurnalBox: {
     flex: 1,
     marginRight: 5,
     height: 180,
     borderRadius: 10,
   },
-  bernapasBox: { // Updated stylesheet name
+  bernapasBox: {
     flex: 1,
     marginLeft: 5,
     height: 180,
@@ -200,6 +235,18 @@ const styles = StyleSheet.create({
   navigationButtonText: {
     marginTop: 5,
     color: COLORS.black,
+  },
+  imageBackground: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 10, // Padding here so the image can fully fill its container
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
   },
 });
 

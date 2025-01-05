@@ -1,3 +1,5 @@
+// theme.tsx
+
 import { StyleSheet } from 'react-native';
 
 // Define reusable colors
@@ -5,7 +7,7 @@ export const COLORS = {
   background: '#f1f2f4',
   white: '#FFFFFF',
   black: '#000000',
-  primary: '#F4CE14',
+  primary: '#ffbd59',
   // Removed 'danger' color
 };
 
@@ -49,6 +51,7 @@ export const LAYOUT = StyleSheet.create({
     marginBottom: 20,
   },
   section: {
+    // No padding, so the background image can fully cover the container
     backgroundColor: COLORS.white,
     borderRadius: 10,
     alignItems: 'flex-start',
@@ -58,11 +61,10 @@ export const LAYOUT = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
-    padding: 10,
   },
   largeSection: {
     width: '100%',
-    height: 150,
+    height: 150, // Both Meditasi and Meditasi dengan panduan use this size
   },
   smallSection: {
     width: '48%',
