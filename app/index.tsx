@@ -145,17 +145,22 @@ const HomeScreen: React.FC = () => {
             backgroundImage={require('../assets/images/meditationBackground.png')} // Added background image
           />
 
-          {/* Downward Rectangular Jurnal and Latihan Napas Boxes */}
+          {/* Downward Rectangular Boxes */}
           <View style={styles.rowSection}>
+            {/* Afirmasi harian. */}
             <SectionBox
-              title="Jurnal."
+              title="Afirmasi harian."
               onPress={() => router.push('/jurnalScreen')}
               customStyle={styles.jurnalBox}
+              backgroundImage={require('../assets/images/afirmasiHarianBackground.png')}
             />
+
+            {/* Temani tidur. */}
             <SectionBox
-              title="Latihan napas."
+              title="Temani tidur."
               onPress={() => router.push('/bernapasScreen')}
               customStyle={styles.bernapasBox}
+              backgroundImage={require('../assets/images/temaniTidurBackground.png')}
             />
           </View>
 
