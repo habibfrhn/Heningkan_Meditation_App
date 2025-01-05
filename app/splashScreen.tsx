@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#FEF9B0',
+        backgroundColor: '#FFFFFF',
     },
     splashText: {
         fontSize: 24,
