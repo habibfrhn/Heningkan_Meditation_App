@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.COLORS.background,
     paddingHorizontal: 25,
-    paddingVertical: 20,
+    paddingVertical: 40,
   },
   timerCircleSection: {
     flex: 2,

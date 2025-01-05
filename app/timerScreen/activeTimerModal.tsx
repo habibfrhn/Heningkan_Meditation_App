@@ -1,3 +1,5 @@
+// activeTimerModal.tsx
+
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import { Audio } from 'expo-av';
@@ -42,7 +44,7 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
     }
 
     return () => clearInterval(interval);
-  }, [isPaused, preparationTime, timeLeft]);
+  }, [isPaused, preparationTime, timeLeft, onClose]);
 
   useEffect(() => {
     if (isRunning && !isPaused) {
@@ -67,14 +69,14 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
 
       playAmbiance();
     } else {
-      stopAmbiance();
+      pauseAmbiance(); // Changed from stopAmbiance to pauseAmbiance
     }
-  }, [isRunning, isPaused]);
+  }, [isRunning, isPaused, intervals, bellsPlayed, duration]);
 
   const playBell = async (type: string) => {
     try {
       if (bellSound) {
-        await bellSound.stopAsync();
+        // Removed stopAsync to prevent replaying from the start
         await bellSound.playAsync();
       }
     } catch (error) {
@@ -85,23 +87,26 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
   const playAmbiance = async () => {
     try {
       if (ambianceSound) {
-        await ambianceSound.setIsLoopingAsync(true);
-        await ambianceSound.stopAsync();
-        await ambianceSound.setPositionAsync(0);
-        await ambianceSound.playAsync();
+        const status = await ambianceSound.getStatusAsync();
+
+        // Type guard to ensure status is AVPlaybackStatusSuccess
+        if (status.isLoaded && !status.isPlaying) {
+          await ambianceSound.setIsLoopingAsync(true);
+          await ambianceSound.playAsync();
+        }
       }
     } catch (error) {
       console.error('Error playing ambiance sound:', error);
     }
   };
 
-  const stopAmbiance = async () => {
+  const pauseAmbiance = async () => { // Renamed from stopAmbiance to pauseAmbiance
     try {
       if (ambianceSound) {
-        await ambianceSound.stopAsync();
+        await ambianceSound.pauseAsync();
       }
     } catch (error) {
-      console.error('Error stopping ambiance sound:', error);
+      console.error('Error pausing ambiance sound:', error);
     }
   };
 
@@ -117,7 +122,7 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
   const handleConfirmStop = (confirm: boolean) => {
     setShowConfirmation(false);
     if (confirm) {
-      stopAmbiance();
+      pauseAmbiance(); // Ensure ambiance is paused
       onClose();
       resetModal();
     } else {
