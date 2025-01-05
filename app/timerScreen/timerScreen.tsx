@@ -31,7 +31,7 @@ const TimerScreen: React.FC = () => {
   const [selectedBell, setSelectedBell] = useState<string>('Aura Chime');
   const [selectedAmbiance, setSelectedAmbiance] = useState<string>('No Sound');
 
-  // The intervals selected by the user. We'll apply special logic if "None" is chosen
+  // Intervals selected by the user
   const [selectedIntervals, setSelectedIntervals] = useState<string[]>(['Awal']);
 
   // Show/hide the active meditation modal
@@ -69,13 +69,10 @@ const TimerScreen: React.FC = () => {
   };
 
   /**
-   * Here is where we implement special logic for 'None':
-   * If the user includes "None" in their selection, we can ignore all other intervals.
-   * (Feel free to customize this logic however you need.)
+   * Special logic for 'None' in the bell intervals
    */
   const handleIntervalChange = (intervals: string[]) => {
     if (intervals.includes('None')) {
-      // If "None" is selected, we disregard any others
       setSelectedIntervals(['None']);
     } else {
       setSelectedIntervals(intervals);
@@ -84,26 +81,28 @@ const TimerScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Timer Circle */}
-      <View style={styles.timerCircleSection}>
+      {/* 1) FIRST CONTAINER — Timer Circle */}
+      <View style={styles.firstContainer}>
         <TimerCircle selectedTime={selectedTime} maxDuration={60} />
       </View>
 
-      <View style={styles.audioContainer}>
-        <Text style={styles.sectionTitle}>Durasi timer</Text>
-        <TimerDurationSelection
-          BOX_SIZE={BOX_SIZE}
-          BOX_MARGIN={BOX_MARGIN}
-          MODAL_PADDING={MODAL_PADDING}
-          modalWidth={modalWidth}
-          onDurationChange={(duration) => setSelectedTime(duration)}
-        />
-      </View>
+      {/* 2) SECOND CONTAINER — Timer & Audio Selections */}
+      <View style={styles.secondContainer}>
+        {/* Durasi Timer */}
+        <View style={styles.audioBlock}>
+          <Text style={styles.sectionTitle}>Durasi timer</Text>
+          <TimerDurationSelection
+            BOX_SIZE={BOX_SIZE}
+            BOX_MARGIN={BOX_MARGIN}
+            MODAL_PADDING={MODAL_PADDING}
+            modalWidth={modalWidth}
+            onDurationChange={(duration) => setSelectedTime(duration)}
+          />
+        </View>
+        <View style={styles.divider} />
 
-      {/* Audio Selections */}
-      <View style={styles.audioSection}>
-        {/* Bell Selection */}
-        <View style={styles.audioContainer}>
+        {/* Pilihan Bel */}
+        <View style={styles.audioBlock}>
           <Text style={styles.sectionTitle}>Pilihan bel</Text>
           <BellSelection
             bellOptions={[
@@ -121,8 +120,8 @@ const TimerScreen: React.FC = () => {
         </View>
         <View style={styles.divider} />
 
-        {/* Bell Intervals (with special logic in handleIntervalChange) */}
-        <View style={styles.audioContainer}>
+        {/* Interval Bel */}
+        <View style={styles.audioBlock}>
           <Text style={styles.sectionTitle}>Interval bel</Text>
           <BellIntervalSelection
             BOX_SIZE={BOX_SIZE}
@@ -134,8 +133,8 @@ const TimerScreen: React.FC = () => {
         </View>
         <View style={styles.divider} />
 
-        {/* Ambient Sound */}
-        <View style={styles.audioContainer}>
+        {/* Suara Ambient */}
+        <View style={styles.audioBlock}>
           <Text style={styles.sectionTitle}>Suara ambient</Text>
           <AmbianceSelection
             ambianceOptions={[
@@ -153,8 +152,8 @@ const TimerScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Start/Stop Button */}
-      <View style={styles.buttonSection}>
+      {/* 3) THIRD CONTAINER — Mulai Timer Button */}
+      <View style={styles.thirdContainer}>
         <StartTimerButton
           isPlaying={showActiveModal}
           onPress={handleStartStopPress}
@@ -177,33 +176,37 @@ const TimerScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  /** Outer container that holds everything */
   container: {
     flex: 1,
     backgroundColor: theme.COLORS.background,
     paddingHorizontal: 25,
-    paddingVertical: 40,
-  },
-  timerCircleSection: {
-    flex: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  durationSelectionSection: {
-    paddingVertical: 20,
-    alignItems: 'center',
-    width: '100%',
-  },
-  audioSection: {
-    flex: 2,
-    borderTopWidth: 1,
-    borderColor: theme.COLORS.black,
-  },
-  audioContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    // This helps give top/bottom spacing. Adjust to taste.
+    paddingTop: 65,
+    paddingBottom: 45,
+    // Distribute the three containers with equal spacing.
     justifyContent: 'space-between',
-    paddingTop: 25,
-    paddingBottom: 25,
+  },
+  /** 1) Timer Circle container */
+  firstContainer: {
+    alignItems: 'center',
+    // If you want a bigger area for the circle, give this a flex or custom height.
+  },
+  /** 2) Timer & Audio selection container */
+  secondContainer: {
+    // We'll just let content define its size, with equal top/bottom margin.
+    marginVertical: 10,
+  },
+  /** 3) Start Timer Button container */
+  thirdContainer: {
+    alignItems: 'center',
+  },
+  /** Subsection for each audio-related part (Durasi timer, Pilihan bel, etc.) */
+  audioBlock: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 25,
   },
   sectionTitle: {
     fontSize: 16,
@@ -214,11 +217,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: theme.COLORS.black,
     width: '100%',
-  },
-  buttonSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   startButton: {
     paddingVertical: 15,
