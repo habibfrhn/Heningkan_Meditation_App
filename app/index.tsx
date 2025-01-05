@@ -17,19 +17,13 @@ import { COLORS, LAYOUT, TEXT_STYLES } from './theme';
 // Import the AudioManagerProvider from wherever you placed your audioManager.tsx
 import { AudioManagerProvider } from './audioManager';
 
-/**
- * Props interface for SectionBox component
- */
 interface SectionBoxProps {
   title: string;
   onPress: () => void;
   customStyle?: StyleProp<ViewStyle>;
-  backgroundImage?: any; // Optional prop for background image
+  backgroundImage?: any;
 }
 
-/**
- * Reusable Section Box Component
- */
 const SectionBox: React.FC<SectionBoxProps> = ({
   title,
   onPress,
@@ -42,7 +36,7 @@ const SectionBox: React.FC<SectionBoxProps> = ({
         <ImageBackground
           source={backgroundImage}
           style={styles.imageBackground}
-          imageStyle={{ borderRadius: 10 }} // Match the border radius if needed
+          imageStyle={{ borderRadius: 10 }}
         >
           <View style={styles.contentContainer}>
             <Text style={[TEXT_STYLES.sectionTitle, { color: COLORS.black }]}>
@@ -61,19 +55,13 @@ const SectionBox: React.FC<SectionBoxProps> = ({
   );
 };
 
-/**
- * Props interface for NavigationButton component
- */
 interface NavigationButtonProps {
   label: string;
-  icon: any; // You can replace any with a more specific type if needed, e.g., ImageSourcePropType
+  icon: any;
   isActive: boolean;
   onPress: () => void;
 }
 
-/**
- * Reusable Navigation Button Component
- */
 const NavigationButton: React.FC<NavigationButtonProps> = ({
   label,
   icon,
@@ -97,9 +85,6 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
   </TouchableOpacity>
 );
 
-/**
- * HomeScreen Component
- */
 const HomeScreen: React.FC = () => {
   const [greeting, setGreeting] = useState<string>('');
   const router = useRouter();
@@ -115,15 +100,12 @@ const HomeScreen: React.FC = () => {
   }, []);
 
   return (
-    // Wrap your entire screen content in AudioManagerProvider
     <AudioManagerProvider>
-      {/* Main Container with ImageBackground */}
       <ImageBackground
         source={require('../assets/images/backgroundHomepage.png')}
         style={[LAYOUT.container, styles.mainContainer]}
-        resizeMode="cover" // Optional: Adjust how the image is resized
+        resizeMode="cover"
       >
-        {/* Greetings Container */}
         <View style={styles.greetingsContainer}>
           <Text
             style={[
@@ -135,45 +117,42 @@ const HomeScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Main Content Container */}
         <View style={styles.mainContentContainer}>
-          {/* Meditasi Box with Background Image */}
+          {/* Meditasi */}
           <SectionBox
             title="Meditasi."
-            onPress={() => router.push('./timerScreen/timerScreen')} // Updated navigation
+            onPress={() => router.push('./timerScreen/timerScreen')}
             customStyle={LAYOUT.largeSection}
-            backgroundImage={require('../assets/images/meditationBackground.png')} // Added background image
+            backgroundImage={require('../assets/images/meditationBackground.png')}
           />
 
-          {/* Downward Rectangular Boxes */}
           <View style={styles.rowSection}>
-            {/* Afirmasi harian. */}
+            {/* Afirmasi harian */}
             <SectionBox
               title="Afirmasi harian."
-              onPress={() => router.push('/jurnalScreen')}
+              onPress={() => router.push('/afirmasiHarianScreen')}
               customStyle={styles.jurnalBox}
               backgroundImage={require('../assets/images/afirmasiHarianBackground.png')}
             />
 
-            {/* Temani tidur. */}
+            {/* Temani tidur */}
             <SectionBox
               title="Temani tidur."
-              onPress={() => router.push('/bernapasScreen')}
+              onPress={() => router.push('/temaniTidurScreen')}
               customStyle={styles.bernapasBox}
               backgroundImage={require('../assets/images/temaniTidurBackground.png')}
             />
           </View>
 
-          {/* Meditasi dengan Panduan Box (also using LAYOUT.largeSection) */}
+          {/* Meditasi dengan panduan */}
           <SectionBox
             title="Meditasi dengan panduan."
-            onPress={() => router.push('/panduanMeditasiScreen')}
+            onPress={() => router.push('/meditasiDenganPanduanScreen')}
             customStyle={LAYOUT.largeSection}
             backgroundImage={require('../assets/images/meditationPanduanBackground.png')}
           />
         </View>
 
-        {/* Bottom Navigation Container */}
         <View style={styles.bottomNavigation}>
           <NavigationButton
             label="Home"
@@ -193,17 +172,13 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-/**
- * Stylesheet for additional styling
- */
 const styles = StyleSheet.create({
   mainContainer: {
     justifyContent: 'space-between',
     paddingVertical: 20,
-    paddingTop: 65, // Added padding to ensure enough space from the top
+    paddingTop: 65,
   },
   greetingsContainer: {
-    // Additional styling if needed
     paddingTop: 0,
   },
   mainContentContainer: {
@@ -249,7 +224,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    padding: 10, // Padding here so the image can fully fill its container
+    padding: 10,
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
   },
