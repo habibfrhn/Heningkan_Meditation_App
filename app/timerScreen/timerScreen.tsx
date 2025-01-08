@@ -11,7 +11,7 @@ import {
 import theme from '../theme';
 
 // Adjust path to your audioManager
-import { useAudioManager } from '../audioManager';
+import { useAudioManager } from './audioManagerTimer';
 
 import TimerCircle from './timerCircle';
 import TimerDurationSelection from './timerDurationSelection';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Slot } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AudioManagerProvider } from './audioManager';
+import { AudioManagerProvider } from './timerScreen/audioManagerTimer';
 import SplashScreenComponent from './splashScreen';
 import { StatusBar } from 'react-native';
 

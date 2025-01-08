@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { useAudioManager } from './audioManager';
+import { useAudioManager } from './timerScreen/audioManagerTimer';
 
 SplashScreen.preventAutoHideAsync();
 

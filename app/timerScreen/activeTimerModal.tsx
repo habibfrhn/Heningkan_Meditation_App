@@ -1,6 +1,6 @@
 // activeTimerModal.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import { Audio } from 'expo-av';
 import theme from '../theme';
@@ -31,6 +31,9 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
     akhir: false,
   });
 
+  // Refs to track interval timers
+  const intervalRefs = useRef<Set<NodeJS.Timeout>>(new Set());
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -40,43 +43,56 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
       setIsRunning(true);
       interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else if (timeLeft <= 0) {
-      onClose();
+      handleSessionEnd();
     }
 
     return () => clearInterval(interval);
-  }, [isPaused, preparationTime, timeLeft, onClose]);
+  }, [isPaused, preparationTime, timeLeft]);
 
   useEffect(() => {
     if (isRunning && !isPaused) {
-      if (!intervals.includes('None')) {
-        if (intervals.includes('Awal') && !bellsPlayed.awal) {
-          playBell('Awal');
-          setBellsPlayed((prev) => ({ ...prev, awal: true }));
-        }
-        if (intervals.includes('Tengah') && !bellsPlayed.tengah) {
-          setTimeout(() => {
-            playBell('Tengah');
-            setBellsPlayed((prev) => ({ ...prev, tengah: true }));
-          }, (duration / 2) * 1000);
-        }
-        if (intervals.includes('Akhir') && !bellsPlayed.akhir) {
-          setTimeout(() => {
-            playBell('Akhir');
-            setBellsPlayed((prev) => ({ ...prev, akhir: true }));
-          }, duration * 1000);
-        }
-      }
-
+      initializeIntervals();
       playAmbiance();
     } else {
-      pauseAmbiance(); // Changed from stopAmbiance to pauseAmbiance
+      pauseAmbiance();
     }
-  }, [isRunning, isPaused, intervals, bellsPlayed, duration]);
+
+    return () => clearAllIntervals();
+  }, [isRunning, isPaused]);
+
+  const initializeIntervals = () => {
+    clearAllIntervals();
+
+    if (!intervals.includes('None')) {
+      if (intervals.includes('Awal') && !bellsPlayed.awal) {
+        playBell('Awal');
+        setBellsPlayed((prev) => ({ ...prev, awal: true }));
+      }
+      if (intervals.includes('Tengah') && !bellsPlayed.tengah) {
+        const tengahTimeout = setTimeout(() => {
+          playBell('Tengah');
+          setBellsPlayed((prev) => ({ ...prev, tengah: true }));
+        }, (duration / 2) * 1000);
+        intervalRefs.current.add(tengahTimeout);
+      }
+      if (intervals.includes('Akhir') && !bellsPlayed.akhir) {
+        const akhirTimeout = setTimeout(() => {
+          playBell('Akhir');
+          setBellsPlayed((prev) => ({ ...prev, akhir: true }));
+        }, duration * 1000);
+        intervalRefs.current.add(akhirTimeout);
+      }
+    }
+  };
+
+  const clearAllIntervals = () => {
+    intervalRefs.current.forEach(clearTimeout);
+    intervalRefs.current.clear();
+  };
 
   const playBell = async (type: string) => {
     try {
       if (bellSound) {
-        // Removed stopAsync to prevent replaying from the start
         await bellSound.playAsync();
       }
     } catch (error) {
@@ -89,7 +105,6 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
       if (ambianceSound) {
         const status = await ambianceSound.getStatusAsync();
 
-        // Type guard to ensure status is AVPlaybackStatusSuccess
         if (status.isLoaded && !status.isPlaying) {
           await ambianceSound.setIsLoopingAsync(true);
           await ambianceSound.playAsync();
@@ -100,7 +115,7 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
     }
   };
 
-  const pauseAmbiance = async () => { // Renamed from stopAmbiance to pauseAmbiance
+  const pauseAmbiance = async () => {
     try {
       if (ambianceSound) {
         await ambianceSound.pauseAsync();
@@ -108,6 +123,35 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
     } catch (error) {
       console.error('Error pausing ambiance sound:', error);
     }
+  };
+
+  const resetAudio = async () => {
+    try {
+      if (bellSound) {
+        await bellSound.stopAsync();
+        await bellSound.setPositionAsync(0);
+      }
+      if (ambianceSound) {
+        await ambianceSound.stopAsync();
+        await ambianceSound.setPositionAsync(0);
+      }
+    } catch (error) {
+      console.error('Error resetting audio:', error);
+    }
+  };
+
+  const resetModal = async () => {
+    await resetAudio();
+    clearAllIntervals();
+    setTimeLeft(duration);
+    setPreparationTime(5);
+    setIsPaused(false);
+    setIsRunning(false);
+    setBellsPlayed({
+      awal: false,
+      tengah: false,
+      akhir: false,
+    });
   };
 
   const handlePauseResume = () => {
@@ -119,27 +163,24 @@ const ActiveTimerModal: React.FC<ActiveTimerModalProps> = ({
     setShowConfirmation(true);
   };
 
-  const handleConfirmStop = (confirm: boolean) => {
+  const handleConfirmStop = async (confirm: boolean) => {
     setShowConfirmation(false);
     if (confirm) {
-      pauseAmbiance(); // Ensure ambiance is paused
-      onClose();
-      resetModal();
+      await resetSession();
     } else {
       setIsPaused(false);
     }
   };
 
-  const resetModal = () => {
-    setTimeLeft(duration);
-    setPreparationTime(5);
-    setIsPaused(false);
-    setIsRunning(false);
-    setBellsPlayed({
-      awal: false,
-      tengah: false,
-      akhir: false,
-    });
+  const handleSessionEnd = async () => {
+    await resetSession();
+  };
+
+  const resetSession = async () => {
+    await resetAudio();
+    pauseAmbiance();
+    onClose();
+    await resetModal();
   };
 
   const formatTime = (seconds: number): string => {

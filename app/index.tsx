@@ -15,7 +15,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { COLORS, LAYOUT, TEXT_STYLES } from './theme';
 
 // Import the AudioManagerProvider from wherever you placed your audioManager.tsx
-import { AudioManagerProvider } from './audioManager';
+import { AudioManagerProvider } from './timerScreen/audioManagerTimer';
 
 interface SectionBoxProps {
   title: string;
@@ -130,7 +130,7 @@ const HomeScreen: React.FC = () => {
             {/* Afirmasi harian */}
             <SectionBox
               title="Afirmasi harian."
-              onPress={() => router.push('/afirmasiHarianScreen')}
+              onPress={() => router.push('../afirmasiScreen/afirmasiHarianScreen')}
               customStyle={styles.jurnalBox}
               backgroundImage={require('../assets/images/afirmasiHarianBackground.png')}
             />

@@ -8,7 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import theme from '../theme';
-import { useAudioManager } from '../audioManager'; // <-- Import your AudioManager hook
+import { useAudioManager } from './audioManagerTimer'; // <-- Import your AudioManager hook
 
 interface BellOption {
   name: string; // We only need the name now (no direct sound references)
