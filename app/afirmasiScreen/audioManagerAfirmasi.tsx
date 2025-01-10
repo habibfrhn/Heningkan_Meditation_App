@@ -1,11 +1,39 @@
-import { Audio } from 'expo-av';
-import { Collection } from './afirmasiHarianScreen';
+// Path: /components/audioManagerAfirmasi.tsx
 
-const audioFiles = {
-  'Keindahan memaafkan': require('../../assets/audio/afirmasi/Keindahan memaafkan.mp3'),
-  'Menarik energi baik': require('../../assets/audio/afirmasi/Menarik energi baik.mp3'),
-  'Mencintai diri sendiri': require('../../assets/audio/afirmasi/Mencintai diri sendiri.mp3'),
-  'Seni melepaskan': require('../../assets/audio/afirmasi/Seni melepaskan.mp3'),
+import { Audio } from 'expo-av';
+
+export interface AudioItem {
+  id: string;
+  title: string;
+  duration: string;
+  filePath: any;
+  image: any;
+  artist: string;
+}
+
+const defaultImage = require('../../assets/images/afirmasiHarianBackground.png');
+
+const audioFiles: { [key: string]: { filePath: any; image: any; artist: string } } = {
+  'Keindahan memaafkan': {
+    filePath: require('../../assets/audio/afirmasi/Keindahan memaafkan.mp3'),
+    image: defaultImage,
+    artist: 'Pishi Yoga & Meditation',
+  },
+  'Menarik energi baik': {
+    filePath: require('../../assets/audio/afirmasi/Menarik energi baik.mp3'),
+    image: defaultImage,
+    artist: 'Pishi Yoga & Meditation',
+  },
+  'Mencintai diri sendiri': {
+    filePath: require('../../assets/audio/afirmasi/Mencintai diri sendiri.mp3'),
+    image: defaultImage,
+    artist: 'Pishi Yoga & Meditation',
+  },
+  'Seni melepaskan': {
+    filePath: require('../../assets/audio/afirmasi/Seni melepaskan.mp3'),
+    image: defaultImage,
+    artist: 'Pishi Yoga & Meditation',
+  },
 };
 
 const formatTime = (millis: number): string => {
@@ -14,35 +42,42 @@ const formatTime = (millis: number): string => {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
-export const fetchAudioMetadata = async (): Promise<Collection> => {
-  const audios = await Promise.all(
-    Object.entries(audioFiles).map(async ([title, file]) => {
-      try {
-        const soundObject = new Audio.Sound();
-        await soundObject.loadAsync(file);
-        const status = await soundObject.getStatusAsync();
+/**
+ * Fetches and returns the audio metadata as an array of AudioItem.
+ */
+export const fetchAudioMetadata = async (): Promise<AudioItem[]> => {
+  const audios: AudioItem[] = [];
 
-        if (status.isLoaded) {
-          return {
-            id: title,
-            title,
-            duration: formatTime(status.durationMillis || 0),
-            filePath: file,
-          };
-        } else {
-          console.error(`Failed to load audio: ${title}`);
-          return { id: title, title, duration: '0:00', filePath: null };
-        }
-      } catch (error) {
-        console.error(`Error loading audio metadata for ${title}:`, error);
-        return { id: title, title, duration: '0:00', filePath: null };
+  for (const [title, { filePath, image, artist }] of Object.entries(audioFiles)) {
+    try {
+      const soundObject = new Audio.Sound();
+      await soundObject.loadAsync(filePath);
+      const status = await soundObject.getStatusAsync();
+
+      if (status.isLoaded) {
+        audios.push({
+          id: title,
+          title,
+          duration: formatTime(status.durationMillis || 0),
+          filePath,
+          image,
+          artist,
+        });
       }
-    })
-  );
 
-  return {
-    id: 'auto-added',
-    name: 'Automatic Collection',
-    audios,
-  };
+      await soundObject.unloadAsync(); // Unload after fetching metadata
+    } catch (error) {
+      console.error(`Error loading audio metadata for "${title}":`, error);
+      audios.push({
+        id: title,
+        title,
+        duration: '0:00',
+        filePath: null,
+        image,
+        artist,
+      });
+    }
+  }
+
+  return audios.filter((audio) => audio.filePath !== null);
 };
