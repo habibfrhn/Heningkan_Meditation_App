@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import AfirmasiHarianModal from './afirmasiHarianModal';
-import { fetchAudioMetadata, AudioItem } from './audioManagerAfirmasi';
+import AfirmasiHarianModal from './afirmasiHarianModal'; // <- Adjust path if needed
+import { fetchAudioMetadata, AudioItem } from './audioManagerAfirmasi'; // <- Adjust path if needed
 import { COLORS } from '../theme';
 
 const AfirmasiHarianScreen: React.FC = () => {
@@ -25,7 +25,7 @@ const AfirmasiHarianScreen: React.FC = () => {
     const loadAudios = async () => {
       try {
         const metadata = await fetchAudioMetadata();
-        if (metadata.length === 0) {
+        if (!metadata.length) {
           Alert.alert('Error', 'No audio files found.');
         }
         setAudios(metadata || []);
@@ -36,12 +36,13 @@ const AfirmasiHarianScreen: React.FC = () => {
         setLoading(false);
       }
     };
+
     loadAudios();
   }, []);
 
   /**
-   * Handles the selection of an audio item.
-   * @param index The index of the selected audio in the audios array.
+   * Handles selecting an audio from the list.
+   * Opens the modal for that audio index.
    */
   const handleSelectAudio = (index: number) => {
     setCurrentAudioIndex(index);
@@ -49,7 +50,7 @@ const AfirmasiHarianScreen: React.FC = () => {
   };
 
   /**
-   * Handles the closure of the modal.
+   * Closes the modal and resets the current audio index.
    */
   const handleCloseModal = () => {
     setModalVisible(false);
@@ -57,8 +58,7 @@ const AfirmasiHarianScreen: React.FC = () => {
   };
 
   /**
-   * Updates the current audio index based on user navigation (next/previous).
-   * @param index The new index to set as the current audio.
+   * Called by the modal to change the currently playing audio (e.g., next/previous).
    */
   const handleAudioChange = (index: number) => {
     setCurrentAudioIndex(index);
@@ -72,7 +72,7 @@ const AfirmasiHarianScreen: React.FC = () => {
       <View
         style={[
           styles.audioItem,
-          currentAudioIndex === index && styles.selectedAudioItem,
+          currentAudioIndex === index && isModalVisible && styles.selectedAudioItem,
         ]}
       >
         <Image source={item.image} style={styles.audioImage} />
@@ -85,9 +85,6 @@ const AfirmasiHarianScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-  /**
-   * Key extractor for FlatList items.
-   */
   const keyExtractor = (item: AudioItem) => item.id;
 
   if (loading) {
@@ -102,6 +99,7 @@ const AfirmasiHarianScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Pilih Afirmasi Harianmu</Text>
+
       <FlatList
         data={audios}
         renderItem={renderAudioItem}
@@ -114,6 +112,7 @@ const AfirmasiHarianScreen: React.FC = () => {
           </View>
         }
       />
+
       {currentAudioIndex !== null && (
         <AfirmasiHarianModal
           visible={isModalVisible}
@@ -134,14 +133,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     padding: 16,
-    paddingTop: 40, // Adjusted for better spacing
+    paddingTop: 40,
   },
   header: {
-    fontSize: 24, // Increased for better visibility
+    fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.black,
     marginBottom: 20,
-    textAlign: 'left',
   },
   listContainer: {
     paddingBottom: 20,
@@ -157,7 +155,7 @@ const styles = StyleSheet.create({
   selectedAudioItem: {
     borderWidth: 2,
     borderColor: COLORS.primary,
-    backgroundColor: '#f0f8ff', // Light highlight color
+    backgroundColor: '#f0f8ff',
   },
   audioImage: {
     width: 60,

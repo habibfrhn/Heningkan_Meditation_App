@@ -40,15 +40,15 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   const currentAudio = audios[currentAudioIndex];
 
   /**
-   * Loads and plays the selected audio.
-   * Ensures that any existing audio is stopped and unloaded before loading the new one.
+   * Loads and plays the selected audio automatically.
+   * Ensures any existing audio is stopped/unloaded before loading the new one.
    */
   const loadAndPlayAudio = async (audio: AudioItem) => {
     try {
-      // If an audio is already playing, stop and unload it
+      // Stop/unload any existing audio
       if (sound.current) {
-        await sound.current.stopAsync();
-        await sound.current.unloadAsync();
+        await sound.current.stopAsync().catch(() => {});
+        await sound.current.unloadAsync().catch(() => {});
         sound.current = null;
       }
 
@@ -63,10 +63,10 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
       const status = await newSound.getStatusAsync();
       if (status.isLoaded) {
         setDuration((status.durationMillis || 0) / 1000);
-        setIsPlaying(false);
         setCurrentPosition(0);
+        setIsPlaying(false);
 
-        // Set up a listener for playback status updates
+        // Listen for playback status updates
         newSound.setOnPlaybackStatusUpdate((playbackStatus) => {
           if (!playbackStatus.isLoaded) {
             if (playbackStatus.error) {
@@ -75,14 +75,19 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
             return;
           }
 
+          // Update current position
           setCurrentPosition((playbackStatus.positionMillis || 0) / 1000);
 
+          // If audio finished playing, stop it to avoid auto replay
           if (playbackStatus.didJustFinish && !playbackStatus.isLooping) {
-            handleNextAudio();
+            // Explicitly stop, ensuring no auto-restart
+            newSound.stopAsync(); 
+            setIsPlaying(false);
+            setCurrentPosition(0);
           }
         });
 
-        // Start playing the audio
+        // Automatically start playing the audio
         await newSound.playAsync();
         setIsPlaying(true);
       } else {
@@ -96,17 +101,20 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
     }
   };
 
+  /**
+   * Whenever the modal is open with a valid audio, load & play that audio.
+   */
   useEffect(() => {
     if (visible && currentAudio) {
       setIsLoading(true);
       loadAndPlayAudio(currentAudio);
     }
 
-    // Cleanup function to stop and unload audio when modal is closed or component unmounts
+    // Cleanup: stop/unload audio when modal closes or component unmounts
     return () => {
       if (sound.current) {
-        sound.current.stopAsync().catch((error) => console.error('Error stopping audio:', error));
-        sound.current.unloadAsync().catch((error) => console.error('Error unloading audio:', error));
+        sound.current.stopAsync().catch(() => {});
+        sound.current.unloadAsync().catch(() => {});
         sound.current = null;
       }
       setCurrentPosition(0);
@@ -118,7 +126,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   }, [visible, currentAudio]);
 
   /**
-   * Toggles play and pause for the current audio.
+   * Toggles play/pause.
    */
   const playPauseAudio = async () => {
     if (!sound.current) {
@@ -146,8 +154,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   };
 
   /**
-   * Handles slider value changes to seek within the audio.
-   * @param value The new slider value.
+   * Seeks within the audio when user drags the slider.
    */
   const handleSliderChange = async (value: number) => {
     if (!sound.current) {
@@ -165,7 +172,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   };
 
   /**
-   * Moves to the next audio in the collection.
+   * Move to the next audio in the list.
    */
   const handleNextAudio = () => {
     const nextIndex = (currentAudioIndex + 1) % audios.length;
@@ -173,7 +180,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   };
 
   /**
-   * Moves to the previous audio in the collection.
+   * Move to the previous audio in the list.
    */
   const handlePreviousAudio = () => {
     const previousIndex = (currentAudioIndex - 1 + audios.length) % audios.length;
@@ -181,9 +188,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   };
 
   /**
-   * Formats time in seconds to MM:SS format.
-   * @param time Time in seconds.
-   * @returns Formatted time string.
+   * Format time (seconds) to MM:SS.
    */
   const formatTime = (time: number): string => {
     const minutes = Math.floor(time / 60).toString().padStart(2, '0');
@@ -194,22 +199,29 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
+        {/* Close Button */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <Text style={styles.closeButtonText}>X</Text>
         </TouchableOpacity>
+
         {isLoading ? (
+          // Loading Screen
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Memuat Afirmasi...</Text>
           </View>
         ) : (
           <>
-            {currentAudio.image && (
+            {/* Audio Image */}
+            {currentAudio?.image && (
               <Image source={currentAudio.image} style={styles.image} />
             )}
-            <Text style={styles.title}>{currentAudio.title}</Text>
-            <Text style={styles.artist}>{currentAudio.artist}</Text>
 
+            {/* Title & Artist */}
+            <Text style={styles.title}>{currentAudio?.title}</Text>
+            <Text style={styles.artist}>{currentAudio?.artist}</Text>
+
+            {/* Slider */}
             <Slider
               style={styles.slider}
               minimumValue={0}
@@ -222,11 +234,13 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
               disabled={isLoading}
             />
 
+            {/* Time Display */}
             <View style={styles.timeContainer}>
               <Text style={styles.timeText}>{formatTime(currentPosition)}</Text>
               <Text style={styles.timeText}>{formatTime(duration)}</Text>
             </View>
 
+            {/* Controls */}
             <View style={styles.controlContainer}>
               <TouchableOpacity onPress={handlePreviousAudio} disabled={isLoading}>
                 <Image
@@ -260,6 +274,8 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   );
 };
 
+export default AfirmasiHarianModal;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -270,7 +286,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 40, // Adjusted for better placement
+    top: 40,
     right: 20,
     backgroundColor: COLORS.primary,
     borderRadius: 20,
@@ -282,24 +298,34 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: COLORS.white,
-    fontSize: 18, // Increased font size for better visibility
+    fontSize: 18,
     fontWeight: 'bold',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.black,
+  },
   image: {
-    width: 220, // Increased size for better visibility
+    width: 220,
     height: 220,
     borderRadius: 10,
     marginBottom: 20,
   },
   title: {
-    fontSize: 26, // Increased font size
+    fontSize: 26,
     fontWeight: 'bold',
     color: COLORS.black,
     marginBottom: 10,
     textAlign: 'center',
   },
   artist: {
-    fontSize: 20, // Increased font size
+    fontSize: 20,
     color: COLORS.black,
     marginBottom: 20,
     textAlign: 'center',
@@ -313,10 +339,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '90%',
-    marginBottom: 20, // Added margin for spacing
+    marginBottom: 20,
   },
   timeText: {
-    fontSize: 16, // Increased font size
+    fontSize: 16,
     color: COLORS.black,
   },
   controlContainer: {
@@ -326,23 +352,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   controlButton: {
-    width: 60, // Increased size for better touch targets
+    width: 60,
     height: 60,
     marginHorizontal: 15,
   },
   disabledButton: {
     opacity: 0.5,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: COLORS.black,
-  },
 });
-
-export default AfirmasiHarianModal;

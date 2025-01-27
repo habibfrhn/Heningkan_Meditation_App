@@ -13,6 +13,7 @@ export interface AudioItem {
 
 const defaultImage = require('../../assets/images/afirmasiHarianBackground.png');
 
+// Map each audio title to its file path, image, and artist
 const audioFiles: { [key: string]: { filePath: any; image: any; artist: string } } = {
   'Keindahan memaafkan': {
     filePath: require('../../assets/audio/afirmasi/Keindahan memaafkan.mp3'),
@@ -43,7 +44,8 @@ const formatTime = (millis: number): string => {
 };
 
 /**
- * Fetches and returns the audio metadata as an array of AudioItem.
+ * Fetches and returns audio metadata (ID, Title, Duration, etc.).
+ * This preloads each audio briefly to get its duration, then unloads it.
  */
 export const fetchAudioMetadata = async (): Promise<AudioItem[]> => {
   const audios: AudioItem[] = [];
@@ -64,8 +66,8 @@ export const fetchAudioMetadata = async (): Promise<AudioItem[]> => {
           artist,
         });
       }
-
-      await soundObject.unloadAsync(); // Unload after fetching metadata
+      // Unload after fetching metadata
+      await soundObject.unloadAsync();
     } catch (error) {
       console.error(`Error loading audio metadata for "${title}":`, error);
       audios.push({
@@ -79,5 +81,6 @@ export const fetchAudioMetadata = async (): Promise<AudioItem[]> => {
     }
   }
 
+  // Filter out audios that failed to load (filePath null)
   return audios.filter((audio) => audio.filePath !== null);
 };
