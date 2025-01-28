@@ -31,35 +31,70 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   currentAudioIndex,
   onAudioChange,
 }) => {
+  // -- Playback states --
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const sound = useRef<Audio.Sound | null>(null);
-
   const currentAudio = audios[currentAudioIndex];
+
+  // -- New buttons toggle states --
+  const [randomActive, setRandomActive] = useState(false);
+  const [repeatActive, setRepeatActive] = useState(false);
+  const [autoPlayActive, setAutoPlayActive] = useState(false);
+
+  /**
+   * If enabling random while repeat is active, disable repeat.
+   */
+  const toggleRandom = () => {
+    if (!randomActive) {
+      // Turn on random => turn off repeat
+      setRepeatActive(false);
+      setRandomActive(true);
+    } else {
+      // Turn off random
+      setRandomActive(false);
+    }
+  };
+
+  /**
+   * If enabling repeat while random is active, disable random.
+   */
+  const toggleRepeat = () => {
+    if (!repeatActive) {
+      // Turn on repeat => turn off random
+      setRandomActive(false);
+      setRepeatActive(true);
+    } else {
+      // Turn off repeat
+      setRepeatActive(false);
+    }
+  };
+
+  /**
+   * Autoplay can be enabled regardless of random/repeat states.
+   */
+  const toggleAutoPlay = () => {
+    setAutoPlayActive((prev) => !prev);
+  };
 
   /**
    * Loads and plays the selected audio automatically.
-   * Ensures any existing audio is stopped/unloaded before loading the new one.
    */
   const loadAndPlayAudio = async (audio: AudioItem) => {
     try {
-      // Stop/unload any existing audio
       if (sound.current) {
         await sound.current.stopAsync().catch(() => {});
         await sound.current.unloadAsync().catch(() => {});
         sound.current = null;
       }
 
-      // Initialize a new sound instance
       const newSound = new Audio.Sound();
       sound.current = newSound;
 
-      // Load the selected audio
       await newSound.loadAsync(audio.filePath);
 
-      // Get the duration
       const status = await newSound.getStatusAsync();
       if (status.isLoaded) {
         setDuration((status.durationMillis || 0) / 1000);
@@ -75,19 +110,19 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
             return;
           }
 
-          // Update current position
           setCurrentPosition((playbackStatus.positionMillis || 0) / 1000);
 
-          // If audio finished playing, stop it to avoid auto replay
+          // If audio finished playing, stop it so it doesn't restart automatically
           if (playbackStatus.didJustFinish && !playbackStatus.isLooping) {
-            // Explicitly stop, ensuring no auto-restart
-            newSound.stopAsync(); 
+            newSound.stopAsync();
             setIsPlaying(false);
             setCurrentPosition(0);
+            // Would normally handle random/repeat/autoplay logic here
+            // but we are only implementing the appearance/toggle states, not the full logic.
           }
         });
 
-        // Automatically start playing the audio
+        // Automatically start playing
         await newSound.playAsync();
         setIsPlaying(true);
       } else {
@@ -109,8 +144,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
       setIsLoading(true);
       loadAndPlayAudio(currentAudio);
     }
-
-    // Cleanup: stop/unload audio when modal closes or component unmounts
+    // Cleanup on close/unmount
     return () => {
       if (sound.current) {
         sound.current.stopAsync().catch(() => {});
@@ -126,7 +160,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   }, [visible, currentAudio]);
 
   /**
-   * Toggles play/pause.
+   * Toggle play/pause.
    */
   const playPauseAudio = async () => {
     if (!sound.current) {
@@ -154,14 +188,13 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   };
 
   /**
-   * Seeks within the audio when user drags the slider.
+   * Seeks in the audio when user drags the slider.
    */
   const handleSliderChange = async (value: number) => {
     if (!sound.current) {
       Alert.alert('Error', 'Audio is not loaded yet.');
       return;
     }
-
     try {
       await sound.current.setPositionAsync(value * 1000);
       setCurrentPosition(value);
@@ -196,6 +229,14 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
     return `${minutes}:${seconds}`;
   };
 
+  /**
+   * Helper to get the container style for small toggle buttons (random, repeat, autoplay).
+   */
+  const toggleButtonStyle = (active: boolean) => [
+    styles.toggleButtonContainer,
+    { backgroundColor: active ? COLORS.primary : 'transparent' },
+  ];
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
@@ -212,9 +253,9 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
           </View>
         ) : (
           <>
-            {/* Audio Image */}
+            {/* Album Art */}
             {currentAudio?.image && (
-              <Image source={currentAudio.image} style={styles.image} />
+              <Image source={currentAudio.image} style={styles.albumArt} />
             )}
 
             {/* Title & Artist */}
@@ -240,15 +281,33 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
               <Text style={styles.timeText}>{formatTime(duration)}</Text>
             </View>
 
-            {/* Controls */}
+            {/* Control Row: random -- prev -- play -- next -- repeat */}
             <View style={styles.controlContainer}>
+              {/* Random Button (far left) */}
+              <TouchableOpacity onPress={toggleRandom} disabled={isLoading}>
+                <View style={toggleButtonStyle(randomActive)}>
+                  <Image
+                    source={require('../../assets/images/buttons/randomButton.png')}
+                    style={styles.toggleButtonIcon}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              {/* Big gap before previous */}
+              <View style={{ width: 40 }} />
+
+              {/* Previous Button (medium) */}
               <TouchableOpacity onPress={handlePreviousAudio} disabled={isLoading}>
                 <Image
                   source={require('../../assets/images/buttons/previousButton.png')}
-                  style={[styles.controlButton, isLoading && styles.disabledButton]}
+                  style={[styles.mediumButtonIcon, isLoading && { opacity: 0.5 }]}
                 />
               </TouchableOpacity>
 
+              {/* Small gap */}
+              <View style={{ width: 20 }} />
+
+              {/* Play/Pause (largest) */}
               <TouchableOpacity onPress={playPauseAudio} disabled={isLoading}>
                 <Image
                   source={
@@ -256,17 +315,51 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
                       ? require('../../assets/images/buttons/pauseButton.png')
                       : require('../../assets/images/buttons/playButton.png')
                   }
-                  style={[styles.controlButton, isLoading && styles.disabledButton]}
+                  style={[styles.largeButtonIcon, isLoading && { opacity: 0.5 }]}
                 />
               </TouchableOpacity>
 
+              {/* Small gap */}
+              <View style={{ width: 20 }} />
+
+              {/* Next Button (medium) */}
               <TouchableOpacity onPress={handleNextAudio} disabled={isLoading}>
                 <Image
                   source={require('../../assets/images/buttons/nextButton.png')}
-                  style={[styles.controlButton, isLoading && styles.disabledButton]}
+                  style={[styles.mediumButtonIcon, isLoading && { opacity: 0.5 }]}
                 />
               </TouchableOpacity>
+
+              {/* Big gap */}
+              <View style={{ width: 40 }} />
+
+              {/* Repeat Button (far right) */}
+              <TouchableOpacity onPress={toggleRepeat} disabled={isLoading}>
+                <View style={toggleButtonStyle(repeatActive)}>
+                  <Image
+                    source={require('../../assets/images/buttons/repeatButton.png')}
+                    style={styles.toggleButtonIcon}
+                  />
+                </View>
+              </TouchableOpacity>
             </View>
+
+            {/* AutoPlay Container (icon + text clickable) */}
+            <TouchableOpacity
+              style={styles.autoplayContainer}
+              onPress={toggleAutoPlay}
+              disabled={isLoading}
+            >
+              <View style={toggleButtonStyle(autoPlayActive)}>
+                <Image
+                  source={require('../../assets/images/buttons/autoPlayButton.png')}
+                  style={styles.toggleButtonIcon}
+                />
+              </View>
+              <Text style={styles.autoplayLabel}>
+                {autoPlayActive ? 'Autoplay is on' : 'Autoplay is off'}
+              </Text>
+            </TouchableOpacity>
           </>
         )}
       </View>
@@ -276,18 +369,19 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
 
 export default AfirmasiHarianModal;
 
+// -- Styles --
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 40,
   },
   closeButton: {
     position: 'absolute',
     top: 40,
-    right: 20,
+    left: 20,
     backgroundColor: COLORS.primary,
     borderRadius: 20,
     width: 40,
@@ -302,7 +396,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   loadingContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -311,21 +404,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.black,
   },
-  image: {
-    width: 220,
-    height: 220,
+  albumArt: {
+    width: 300,
+    height: 300,
     borderRadius: 10,
     marginBottom: 20,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 10,
     textAlign: 'center',
+    marginBottom: 4,
   },
   artist: {
-    fontSize: 20,
+    fontSize: 16,
     color: COLORS.black,
     marginBottom: 20,
     textAlign: 'center',
@@ -333,7 +426,7 @@ const styles = StyleSheet.create({
   slider: {
     width: '90%',
     height: 40,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   timeContainer: {
     flexDirection: 'row',
@@ -342,21 +435,59 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   timeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.black,
   },
+  // The main row for random - previous - play - next - repeat
   controlContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 10,
   },
-  controlButton: {
+
+  /**
+   * Smallest toggle buttons (random/repeat/autoplay).
+   * We add borderRadius & overflow so corners are visible.
+   */
+  toggleButtonContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1, // optional for more visible corners
+    borderColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toggleButtonIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+
+  // Next/Previous: medium
+  mediumButtonIcon: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+
+  // Play/Pause: largest
+  largeButtonIcon: {
     width: 60,
     height: 60,
-    marginHorizontal: 15,
+    resizeMode: 'contain',
   },
-  disabledButton: {
-    opacity: 0.5,
+
+  // Autoplay row - we wrap icon + text in one pressable
+  autoplayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  autoplayLabel: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: COLORS.black,
   },
 });
