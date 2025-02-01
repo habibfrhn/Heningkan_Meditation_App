@@ -1,6 +1,6 @@
 // Path: /screens/AfirmasiHarianScreen.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -40,49 +40,41 @@ const AfirmasiHarianScreen: React.FC = () => {
     loadAudios();
   }, []);
 
-  /**
-   * Handles selecting an audio from the list.
-   * Opens the modal for that audio index.
-   */
   const handleSelectAudio = (index: number) => {
     setCurrentAudioIndex(index);
     setModalVisible(true);
   };
 
-  /**
-   * Closes the modal and resets the current audio index.
-   */
   const handleCloseModal = () => {
     setModalVisible(false);
     setCurrentAudioIndex(null);
   };
 
-  /**
-   * Called by the modal to change the currently playing audio (e.g., next/previous).
-   */
   const handleAudioChange = (index: number) => {
     setCurrentAudioIndex(index);
   };
 
-  /**
-   * Renders each audio item in the FlatList.
-   */
-  const renderAudioItem = ({ item, index }: { item: AudioItem; index: number }) => (
-    <TouchableOpacity onPress={() => handleSelectAudio(index)}>
-      <View
-        style={[
-          styles.audioItem,
-          currentAudioIndex === index && isModalVisible && styles.selectedAudioItem,
-        ]}
-      >
-        <Image source={item.image} style={styles.audioImage} />
-        <View style={styles.audioTextContainer}>
-          <Text style={styles.audioTitle}>{item.title}</Text>
-          <Text style={styles.audioArtist}>{item.artist}</Text>
+  const renderAudioItem = useCallback(
+    ({ item, index }: { item: AudioItem; index: number }) => (
+      <TouchableOpacity onPress={() => handleSelectAudio(index)}>
+        <View style={styles.audioItemWrapper}>
+          <View
+            style={[
+              styles.audioItem,
+              currentAudioIndex === index && isModalVisible && styles.selectedAudioItem,
+            ]}
+          >
+            <Image source={item.image} style={styles.audioImage} />
+            <View style={styles.audioTextContainer}>
+              <Text style={styles.audioTitle}>{item.title}</Text>
+              <Text style={styles.audioArtist}>{item.artist}</Text>
+            </View>
+            <Text style={styles.audioDuration}>{item.duration}</Text>
+          </View>
         </View>
-        <Text style={styles.audioDuration}>{item.duration}</Text>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    ),
+    [currentAudioIndex, isModalVisible]
   );
 
   const keyExtractor = (item: AudioItem) => item.id;
@@ -98,14 +90,13 @@ const AfirmasiHarianScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Pilih Afirmasi Harianmu</Text>
+      <Text style={styles.header}>Plih afirmasi harianmu.</Text>
 
       <FlatList
         data={audios}
         renderItem={renderAudioItem}
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContainer}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Tidak ada afirmasi tersedia.</Text>
@@ -136,19 +127,24 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 16, // Smaller header text
+    fontWeight: '600',
     color: COLORS.black,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   listContainer: {
     paddingBottom: 20,
   },
+  // Outer wrapper to control vertical spacing between each audio item.
+  audioItemWrapper: {
+    marginVertical: 4, // Tighter vertical gap between boxes
+  },
+  // Inner container with border radius and padding (shadow removed)
   audioItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    padding: 5, // Reduced padding for a compact look
     borderRadius: 10,
     backgroundColor: COLORS.white,
   },
@@ -158,8 +154,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f8ff',
   },
   audioImage: {
-    width: 60,
-    height: 60,
+    width: 50, // Smaller image size
+    height: 50,
     borderRadius: 8,
     marginRight: 12,
   },
@@ -168,23 +164,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   audioTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.black,
   },
   audioArtist: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
-    marginTop: 4,
+    marginTop: 2,
   },
   audioDuration: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
     marginLeft: 10,
     textAlign: 'right',
-  },
-  separator: {
-    height: 10,
   },
   loadingContainer: {
     flex: 1,
