@@ -1,5 +1,3 @@
-// Path: /components/AfirmasiHarianModal.tsx
-
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Modal,
@@ -265,9 +263,12 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
-        {/* Close Button */}
+        {/* Updated Close Button */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Text style={styles.closeButtonText}>X</Text>
+          <Image
+            source={require('../../assets/images/buttons/closeButton.png')}
+            style={styles.closeButtonIcon}
+          />
         </TouchableOpacity>
 
         {isLoading ? (
@@ -385,18 +386,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10, // Positioned at the top left corner
     left: 10,
-    backgroundColor: COLORS.primary,
-    borderRadius: 15, // Reduced border radius for a smaller button
-    width: 30, // Smaller width
-    height: 30, // Smaller height
+    backgroundColor: 'transparent', // Remove background color
+    borderRadius: 10, // Updated border radius for the smaller button
+    width: 20, // Updated width (smaller)
+    height: 20, // Updated height (smaller)
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
   },
-  closeButtonText: {
-    color: COLORS.white,
-    fontSize: 14, // Reduced font size
-    fontWeight: 'bold',
+  closeButtonIcon: {
+    width: 15, // Updated icon width (smaller)
+    height: 15, // Updated icon height (smaller)
+    resizeMode: 'contain',
   },
   loadingContainer: {
     justifyContent: 'center',
