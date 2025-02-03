@@ -1,8 +1,9 @@
+// komunitasScreen.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from './theme';
 
-const ProfileScreen = () => {
+const KomunitasScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Komunitas Screen</Text>
@@ -13,7 +14,7 @@ const ProfileScreen = () => {
   );
 };
 
-export default ProfileScreen;
+export default KomunitasScreen;
 
 const styles = StyleSheet.create({
   container: {

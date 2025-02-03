@@ -32,6 +32,7 @@
     "react-native-webview": "13.12.5"
   },
   "devDependencies": {
+    "@svgr/cli": "^8.1.0",
     "@types/react": "18.3.12",
     "depcheck": "^1.4.7",
     "jest": "^29.2.1",
