@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 0,
   },
   divider: {
     borderBottomWidth: 1,

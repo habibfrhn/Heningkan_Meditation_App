@@ -36,9 +36,9 @@ const NavigationButton: React.FC<NavigationButtonProps> = ({
   return (
     <TouchableOpacity style={styles.navigationButton} onPress={onPress}>
       <Icon
-        width={22}    // Increased icon width
-        height={22}   // Increased icon height
-        fill={isActive ? COLORS.primary : COLORS.black}
+        width={30}    // Icon width
+        height={30}   // Icon height
+        fill={isActive ? COLORS.primary : COLORS.black} // Active icons use COLORS.primary
       />
       <Text
         style={[
@@ -65,18 +65,21 @@ const BottomNavigation: React.FC = () => {
         isActive={pathname === '/'}
         onPress={() => router.push('/')}
       />
+      <View style={styles.divider} />
       <NavigationButton
         label="Jelajahi"
         Icon={JelajahiIcon}
         isActive={pathname === '/jelajahiScreen'}
         onPress={() => router.push('/jelajahiScreen')}
       />
+      <View style={styles.divider} />
       <NavigationButton
         label="Komunitas"
         Icon={KomunitasIcon}
-        isActive={pathname === '/komunitasScreen'}
+        isActive={pathname === '/komunitasScreen'} // Will be active when on komunitasScreen
         onPress={() => router.push('/komunitasScreen')}
       />
+      <View style={styles.divider} />
       <NavigationButton
         label="Pancapaian"
         Icon={PencapaianIcon}
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 10,    // Top padding
     paddingBottom: 10, // Bottom padding
-    backgroundColor: 'white', // Set navigation background to white
+    backgroundColor: 'white', // Navigation background color
   },
   navigationButton: {
     alignItems: 'center',
@@ -130,5 +133,11 @@ const styles = StyleSheet.create({
   },
   navigationButtonText: {
     marginTop: 5,
+    fontSize: 10, // Text under the icons is now font size 12
+  },
+  divider: {
+    width: 1,
+    height: '60%',
+    backgroundColor: COLORS.background, // Divider color can be adjusted as needed
   },
 });

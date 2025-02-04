@@ -1,18 +1,28 @@
+// afirmasiHarianModal.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Modal,
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Audio } from 'expo-av';
 import { COLORS } from '../theme';
 import { AudioItem } from './audioManagerAfirmasi';
+
+// Import TSX button components (without file extensions)
+import CloseButton from '../../assets/images/buttons/closeButton';
+import RandomButtonIcon from '../../assets/images/buttons/randomButton';
+import PreviousButtonIcon from '../../assets/images/buttons/previousButton';
+import PlayButtonIcon from '../../assets/images/buttons/playButton';
+import PauseButtonIcon from '../../assets/images/buttons/pauseButton';
+import NextButtonIcon from '../../assets/images/buttons/nextButton';
+import RepeatButtonIcon from '../../assets/images/buttons/repeatButton';
 
 interface AfirmasiHarianModalProps {
   visible: boolean;
@@ -175,7 +185,6 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
 
   /**
    * Seek in the audio when the slider is moved.
-   * Added a check for whether the player is loaded to prevent errors.
    */
   const handleSliderChange = async (value: number) => {
     if (!sound.current) {
@@ -183,7 +192,6 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
       return;
     }
     try {
-      // Ensure that the sound is loaded before seeking.
       const status = await sound.current.getStatusAsync();
       if (!status.isLoaded) {
         return;
@@ -263,12 +271,9 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
-        {/* Updated Close Button */}
+        {/* Updated Close Button using the TSX component with a larger size */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Image
-            source={require('../../assets/images/buttons/closeButton.png')}
-            style={styles.closeButtonIcon}
-          />
+          <CloseButton width={25} height={25} />
         </TouchableOpacity>
 
         {isLoading ? (
@@ -311,10 +316,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
               {/* Random Button */}
               <TouchableOpacity onPress={toggleRandom} disabled={isLoading}>
                 <View style={toggleButtonStyle(randomActive)}>
-                  <Image
-                    source={require('../../assets/images/buttons/randomButton.png')}
-                    style={styles.toggleButtonIcon}
-                  />
+                  <RandomButtonIcon width={20} height={20} />
                 </View>
               </TouchableOpacity>
 
@@ -322,34 +324,25 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
 
               {/* Previous Button */}
               <TouchableOpacity onPress={handlePreviousAudio} disabled={isLoading}>
-                <Image
-                  source={require('../../assets/images/buttons/previousButton.png')}
-                  style={[styles.mediumButtonIcon, isLoading && { opacity: 0.5 }]}
-                />
+                <PreviousButtonIcon width={30} height={30} />
               </TouchableOpacity>
 
               <View style={{ width: 20 }} />
 
               {/* Play/Pause Button */}
               <TouchableOpacity onPress={playPauseAudio} disabled={isLoading}>
-                <Image
-                  source={
-                    isPlaying
-                      ? require('../../assets/images/buttons/pauseButton.png')
-                      : require('../../assets/images/buttons/playButton.png')
-                  }
-                  style={[styles.largeButtonIcon, isLoading && { opacity: 0.5 }]}
-                />
+                {isPlaying ? (
+                  <PauseButtonIcon width={60} height={60} />
+                ) : (
+                  <PlayButtonIcon width={60} height={60} />
+                )}
               </TouchableOpacity>
 
               <View style={{ width: 20 }} />
 
               {/* Next Button */}
               <TouchableOpacity onPress={handleNextAudio} disabled={isLoading}>
-                <Image
-                  source={require('../../assets/images/buttons/nextButton.png')}
-                  style={[styles.mediumButtonIcon, isLoading && { opacity: 0.5 }]}
-                />
+                <NextButtonIcon width={30} height={30} />
               </TouchableOpacity>
 
               <View style={{ width: 40 }} />
@@ -357,10 +350,7 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
               {/* Repeat Button */}
               <TouchableOpacity onPress={toggleRepeat} disabled={isLoading}>
                 <View style={toggleButtonStyle(repeatActive)}>
-                  <Image
-                    source={require('../../assets/images/buttons/repeatButton.png')}
-                    style={styles.toggleButtonIcon}
-                  />
+                  <RepeatButtonIcon width={20} height={20} />
                 </View>
               </TouchableOpacity>
             </View>
@@ -373,31 +363,25 @@ const AfirmasiHarianModal: React.FC<AfirmasiHarianModalProps> = ({
 
 export default AfirmasiHarianModal;
 
-// -- Styles --
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
     alignItems: 'center',
-    justifyContent: 'flex-start', // Push content to the top
-    paddingTop: 20, // Reduced padding to move content upward
+    justifyContent: 'flex-start',
+    paddingTop: 20,
   },
   closeButton: {
     position: 'absolute',
-    top: 10, // Positioned at the top left corner
+    top: 10,
     left: 10,
-    backgroundColor: 'transparent', // Remove background color
-    borderRadius: 10, // Updated border radius for the smaller button
-    width: 20, // Updated width (smaller)
-    height: 20, // Updated height (smaller)
+    backgroundColor: 'transparent',
+    borderRadius: 10,
+    width: 30,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
-  },
-  closeButtonIcon: {
-    width: 15, // Updated icon width (smaller)
-    height: 15, // Updated icon height (smaller)
-    resizeMode: 'contain',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -447,27 +431,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   toggleButtonContainer: {
-    width: 30, // Reduced size for random & repeat buttons
+    width: 30,
     height: 30,
     borderRadius: 6,
     overflow: 'hidden',
     borderColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  toggleButtonIcon: {
-    width: 20, // Reduced icon size
-    height: 20,
-    resizeMode: 'contain',
-  },
-  mediumButtonIcon: {
-    width: 30, // Reduced size for next/previous buttons
-    height: 30,
-    resizeMode: 'contain',
-  },
-  largeButtonIcon: {
-    width: 60,
-    height: 60,
-    resizeMode: 'contain',
   },
 });

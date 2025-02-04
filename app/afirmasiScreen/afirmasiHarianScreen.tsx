@@ -145,6 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 5, // Reduced padding for a compact look
+    paddingHorizontal: 15,
     borderRadius: 10,
     backgroundColor: COLORS.white,
   },
